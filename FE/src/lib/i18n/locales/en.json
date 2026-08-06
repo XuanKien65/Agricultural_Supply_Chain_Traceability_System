@@ -1,0 +1,67 @@
+{
+  "app": {
+    "name": "React Base",
+    "tagline": "Production-ready React starter"
+  },
+  "nav": {
+    "home": "Home",
+    "users": "Users",
+    "logout": "Log out"
+  },
+  "auth": {
+    "login": "Log in",
+    "register": "Register",
+    "email": "Email",
+    "emailPlaceholder": "e.g. nguyenvana@gmail.com",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "fullName": "Full name",
+    "fullNamePlaceholder": "e.g. Nguyễn Văn A",
+    "role": "Role",
+    "unitName": "Organization / production unit",
+    "unitNamePlaceholder": "e.g. Green Valley Farm",
+    "signInToContinue": "Sign in to continue",
+    "createAccountSubtitle": "Choose your role in the supply chain",
+    "invalidCredentials": "Invalid email or password",
+    "emailTaken": "This email is already registered",
+    "emailInvalid": "Invalid email format, e.g. name@gmail.com",
+    "required": "Please fill in all required fields",
+    "passwordMismatch": "Passwords do not match",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "signUp": "Sign up",
+    "signIn": "Sign in",
+    "roles": {
+      "Farmer": "Farmer / Producer",
+      "Processor": "Processor",
+      "Distributor": "Distributor",
+      "Retailer": "Retailer",
+      "Inspector": "Quality Inspector"
+    }
+  },
+  "users": {
+    "title": "Users",
+    "search": "Search users…",
+    "create": "New user",
+    "empty": "No users found",
+    "name": "Name",
+    "namePlaceholder": "e.g. Nguyễn Văn A",
+    "username": "Username",
+    "email": "Email",
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "createdToast": "User created",
+    "updatedToast": "User updated",
+    "deletedToast": "User deleted"
+  },
+  "common": {
+    "loading": "Loading…",
+    "retry": "Retry",
+    "error": "Something went wrong",
+    "notFound": "Page not found",
+    "backHome": "Back to home"
+  }
+}
