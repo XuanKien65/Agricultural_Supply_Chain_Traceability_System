@@ -1,0 +1,46 @@
+# dependencies
+node_modules/
+
+# next.js
+apps/frontend/.next/
+apps/frontend/out/
+apps/frontend/next-env.d.ts
+
+# prisma generated client
+apps/backend/src/generated/
+
+# user-uploaded media (runtime) — mount as a volume in prod
+apps/backend/uploads/
+
+# old WordPress source backup (reference only — large + contains secrets/PII, do not commit)
+/_reference/
+_reference.zip
+*.zip
+
+/docs/
+
+# env files (commit only .env.example)
+.env
+**/.env
+.env.local
+**/.env.local
+**/.env*.local
+!.env.example
+
+# misc
+.DS_Store
+*.pem
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vercel
+/coverage
+
+# Playwright E2E artifacts
+/test-results/
+/playwright-report/
+
+# Claude Code
+CLAUDE.md
+.claude/

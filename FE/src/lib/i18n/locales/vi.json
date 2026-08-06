@@ -1,0 +1,67 @@
+{
+  "app": {
+    "name": "React Base",
+    "tagline": "Khởi tạo React sẵn sàng cho production"
+  },
+  "nav": {
+    "home": "Trang chủ",
+    "users": "Người dùng",
+    "logout": "Đăng xuất"
+  },
+  "auth": {
+    "login": "Đăng nhập",
+    "register": "Đăng ký",
+    "email": "Email",
+    "emailPlaceholder": "VD: nguyenvana@gmail.com",
+    "password": "Mật khẩu",
+    "confirmPassword": "Xác nhận mật khẩu",
+    "fullName": "Họ và tên",
+    "fullNamePlaceholder": "VD: Nguyễn Văn A",
+    "role": "Vai trò",
+    "unitName": "Đơn vị / cơ sở sản xuất",
+    "unitNamePlaceholder": "VD: Nông trại Xanh",
+    "signInToContinue": "Đăng nhập để tiếp tục",
+    "createAccountSubtitle": "Chọn vai trò của bạn trong chuỗi cung ứng",
+    "invalidCredentials": "Email hoặc mật khẩu không đúng",
+    "emailTaken": "Email này đã được sử dụng",
+    "emailInvalid": "Email không đúng định dạng, ví dụ: nguyenvana@gmail.com",
+    "required": "Vui lòng nhập đầy đủ thông tin bắt buộc",
+    "passwordMismatch": "Mật khẩu xác nhận không khớp",
+    "noAccount": "Chưa có tài khoản?",
+    "haveAccount": "Đã có tài khoản?",
+    "signUp": "Đăng ký ngay",
+    "signIn": "Đăng nhập ngay",
+    "roles": {
+      "Farmer": "Nông dân / Cơ sở sản xuất",
+      "Processor": "Đơn vị sơ chế",
+      "Distributor": "Nhà phân phối",
+      "Retailer": "Đại lý bán lẻ",
+      "Inspector": "Đơn vị kiểm định"
+    }
+  },
+  "users": {
+    "title": "Người dùng",
+    "search": "Tìm người dùng…",
+    "create": "Thêm mới",
+    "empty": "Không có người dùng",
+    "name": "Tên",
+    "namePlaceholder": "VD: Nguyễn Văn A",
+    "username": "Tên đăng nhập",
+    "email": "Email",
+    "actions": "Thao tác",
+    "edit": "Sửa",
+    "delete": "Xóa",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "createdToast": "Đã tạo người dùng",
+    "updatedToast": "Đã cập nhật người dùng",
+    "deletedToast": "Đã xóa người dùng"
+  },
+  "common": {
+    "loading": "Đang tải…",
+    "retry": "Thử lại",
+    "error": "Đã có lỗi xảy ra",
+    "notFound": "Không tìm thấy trang",
+    "backHome": "Về trang chủ"
+  }
+}
