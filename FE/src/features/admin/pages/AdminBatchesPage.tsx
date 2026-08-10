@@ -17,17 +17,17 @@ import {
 } from '../admin.store'
 
 import {
-  AdminDataTable,
-  type AdminColumn,
-} from '../components/AdminDataTable'
+  DataTable,
+  type DataTableColumn,
+} from '@/components/ui/DataTable'
 
 import {
   PageHeader,
-} from '../components/PageHeader'
+} from '@/components/ui/PageHeader'
 
 import {
   StatusChip,
-} from '../components/StatusChip'
+} from '@/components/ui/StatusChip'
 
 import type {
   LoHang,
@@ -96,7 +96,7 @@ export function AdminBatchesPage() {
   ])
 
   const columns:
-    AdminColumn<LoHang>[] = [
+    DataTableColumn<LoHang>[] = [
       {
         key: 'batch',
 
@@ -125,9 +125,7 @@ export function AdminBatchesPage() {
 
             <Box>
               <Typography
-                fontWeight={
-                  800
-                }
+                sx={{ fontWeight: 800 }}
               >
                 LH-
                 {row.maLoHang}
@@ -239,7 +237,7 @@ export function AdminBatchesPage() {
         }
       />
 
-      <AdminDataTable
+      <DataTable
         rows={rows}
         columns={columns}
         getRowId={(row) =>

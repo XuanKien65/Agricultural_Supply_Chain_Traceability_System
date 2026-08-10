@@ -7,13 +7,13 @@ import {
 } from '../admin.store'
 
 import {
-  AdminDataTable,
-  type AdminColumn,
-} from '../components/AdminDataTable'
+  DataTable,
+  type DataTableColumn,
+} from '@/components/ui/DataTable'
 
 import {
   PageHeader,
-} from '../components/PageHeader'
+} from '@/components/ui/PageHeader'
 
 import type {
   VaiTro,
@@ -33,7 +33,7 @@ export function AdminRolesPage() {
     )
 
   const columns:
-    AdminColumn<VaiTro>[] = [
+    DataTableColumn<VaiTro>[] = [
       {
         key: 'id',
 
@@ -52,7 +52,7 @@ export function AdminRolesPage() {
 
         render: (row) => (
           <Typography
-            fontWeight={800}
+            sx={{ fontWeight: 800 }}
           >
             {row.tenVaiTro}
           </Typography>
@@ -92,7 +92,7 @@ export function AdminRolesPage() {
         description="Dữ liệu bảng VaiTro trong ERD."
       />
 
-      <AdminDataTable
+      <DataTable
         rows={vaiTros}
         columns={columns}
         getRowId={(row) =>

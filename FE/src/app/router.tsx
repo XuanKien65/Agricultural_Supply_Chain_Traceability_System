@@ -1,299 +1,74 @@
-import { lazy } from 'react'
-
-import {
-  createBrowserRouter,
-} from 'react-router-dom'
-
-import { AppLayout } from '@/components/layout/AppLayout'
-
+import { lazy, type ComponentType } from 'react'
+import { createBrowserRouter } from 'react-router-dom'
+import { MainLayout } from '@/layouts/MainLayout'
 import { ProtectedRoute } from '@/features/auth/ProtectedRoute'
-
-import { AdminRoute } from '@/features/admin/AdminRoute'
-
+import { RoleRoute } from '@/features/auth/RoleRoute'
 import { AdminLayout } from '@/features/admin/components/AdminLayout'
-
 import { NotFoundPage } from '@/pages/NotFoundPage'
 
-// ========================
-// CODE CŨ CỦA BASE
-// ========================
+function lazyPage(loader: () => Promise<Record<string, ComponentType>>, exportName: string) {
+  return lazy(() => loader().then((m) => ({ default: m[exportName] as ComponentType })))
+}
 
-const HomePage = lazy(() =>
-  import('@/pages/HomePage').then(
-    (m) => ({
-      default: m.HomePage,
-    }),
-  ),
-)
+const LoginPage = lazyPage(() => import('@/features/auth/LoginPage'), 'LoginPage')
+const RegisterPage = lazyPage(() => import('@/features/auth/RegisterPage'), 'RegisterPage')
+const HomePage = lazyPage(() => import('@/pages/HomePage'), 'HomePage')
 
-const UsersListPage = lazy(() =>
-  import(
-    '@/features/users/UsersListPage'
-  ).then((m) => ({
-    default: m.UsersListPage,
-  })),
-)
+const BatchesPage = lazyPage(() => import('@/features/batches/pages/BatchesPage'), 'BatchesPage')
+const CreateBatchPage = lazyPage(() => import('@/features/batches/pages/CreateBatchPage'), 'CreateBatchPage')
+const BatchDetailPage = lazyPage(() => import('@/features/batches/pages/BatchDetailPage'), 'BatchDetailPage')
 
-const LoginPage = lazy(() =>
-  import(
-    '@/features/auth/LoginPage'
-  ).then((m) => ({
-    default: m.LoginPage,
-  })),
-)
+const AdminDashboardPage = lazyPage(() => import('@/features/admin/pages/AdminDashboardPage'), 'AdminDashboardPage')
+const AdminRolesPage = lazyPage(() => import('@/features/admin/pages/AdminRolesPage'), 'AdminRolesPage')
+const AdminUnitsPage = lazyPage(() => import('@/features/admin/pages/AdminUnitsPage'), 'AdminUnitsPage')
+const AdminUsersPage = lazyPage(() => import('@/features/admin/pages/AdminUsersPage'), 'AdminUsersPage')
+const AdminProductsPage = lazyPage(() => import('@/features/admin/pages/AdminProductsPage'), 'AdminProductsPage')
+const AdminBatchesPage = lazyPage(() => import('@/features/admin/pages/AdminBatchesPage'), 'AdminBatchesPage')
+const AdminEventsPage = lazyPage(() => import('@/features/admin/pages/AdminEventsPage'), 'AdminEventsPage')
+const AdminInspectionsPage = lazyPage(() => import('@/features/admin/pages/AdminInspectionsPage'), 'AdminInspectionsPage')
+const AdminCertificatesPage = lazyPage(() => import('@/features/admin/pages/AdminCertificatesPage'), 'AdminCertificatesPage')
+const AdminRecallsPage = lazyPage(() => import('@/features/admin/pages/AdminRecallsPage'), 'AdminRecallsPage')
 
-const RegisterPage = lazy(() =>
-  import(
-    '@/features/auth/RegisterPage'
-  ).then((m) => ({
-    default: m.RegisterPage,
-  })),
-)
+export const router = createBrowserRouter([
+  { path: '/login', element: <LoginPage /> },
+  { path: '/register', element: <RegisterPage /> },
 
-// ========================
-// ADMIN MỚI
-// ========================
+  {
+    element: <ProtectedRoute />,
+    children: [
+      {
+        element: <RoleRoute roles={['Admin']} />,
+        children: [
+          {
+            path: 'admin',
+            element: <AdminLayout />,
+            children: [
+              { index: true, element: <AdminDashboardPage /> },
+              { path: 'roles', element: <AdminRolesPage /> },
+              { path: 'units', element: <AdminUnitsPage /> },
+              { path: 'users', element: <AdminUsersPage /> },
+              { path: 'products', element: <AdminProductsPage /> },
+              { path: 'batches', element: <AdminBatchesPage /> },
+              { path: 'events', element: <AdminEventsPage /> },
+              { path: 'inspections', element: <AdminInspectionsPage /> },
+              { path: 'certificates', element: <AdminCertificatesPage /> },
+              { path: 'recalls', element: <AdminRecallsPage /> },
+            ],
+          },
+        ],
+      },
 
-const AdminDashboardPage =
-  lazy(() =>
-    import(
-      '@/features/admin/pages/AdminDashboardPage'
-    ).then((m) => ({
-      default:
-        m.AdminDashboardPage,
-    })),
-  )
+      {
+        element: <MainLayout />,
+        children: [
+          { index: true, element: <HomePage /> },
+          { path: 'batches', element: <BatchesPage /> },
+          { path: 'batches/new', element: <CreateBatchPage /> },
+          { path: 'batches/:batchId', element: <BatchDetailPage /> },
+        ],
+      },
+    ],
+  },
 
-const AdminRolesPage =
-  lazy(() =>
-    import(
-      '@/features/admin/pages/AdminRolesPage'
-    ).then((m) => ({
-      default:
-        m.AdminRolesPage,
-    })),
-  )
-
-const AdminUnitsPage =
-  lazy(() =>
-    import(
-      '@/features/admin/pages/AdminUnitsPage'
-    ).then((m) => ({
-      default:
-        m.AdminUnitsPage,
-    })),
-  )
-
-const AdminUsersPage =
-  lazy(() =>
-    import(
-      '@/features/admin/pages/AdminUsersPage'
-    ).then((m) => ({
-      default:
-        m.AdminUsersPage,
-    })),
-  )
-
-const AdminProductsPage =
-  lazy(() =>
-    import(
-      '@/features/admin/pages/AdminProductsPage'
-    ).then((m) => ({
-      default:
-        m.AdminProductsPage,
-    })),
-  )
-
-const AdminBatchesPage =
-  lazy(() =>
-    import(
-      '@/features/admin/pages/AdminBatchesPage'
-    ).then((m) => ({
-      default:
-        m.AdminBatchesPage,
-    })),
-  )
-
-const AdminEventsPage =
-  lazy(() =>
-    import(
-      '@/features/admin/pages/AdminEventsPage'
-    ).then((m) => ({
-      default:
-        m.AdminEventsPage,
-    })),
-  )
-
-const AdminInspectionsPage =
-  lazy(() =>
-    import(
-      '@/features/admin/pages/AdminInspectionsPage'
-    ).then((m) => ({
-      default:
-        m.AdminInspectionsPage,
-    })),
-  )
-
-const AdminCertificatesPage =
-  lazy(() =>
-    import(
-      '@/features/admin/pages/AdminCertificatesPage'
-    ).then((m) => ({
-      default:
-        m.AdminCertificatesPage,
-    })),
-  )
-
-const AdminRecallsPage =
-  lazy(() =>
-    import(
-      '@/features/admin/pages/AdminRecallsPage'
-    ).then((m) => ({
-      default:
-        m.AdminRecallsPage,
-    })),
-  )
-
-export const router =
-  createBrowserRouter([
-    {
-      path: '/login',
-      element: <LoginPage />,
-    },
-
-    {
-      path: '/register',
-      element: <RegisterPage />,
-    },
-
-    {
-      element:
-        <ProtectedRoute />,
-
-      children: [
-        // ====================
-        // ADMIN
-        // ====================
-
-        {
-          element:
-            <AdminRoute />,
-
-          children: [
-            {
-              path: 'admin',
-
-              element:
-                <AdminLayout />,
-
-              children: [
-                {
-                  index: true,
-
-                  element:
-                    <AdminDashboardPage />,
-                },
-
-                {
-                  path: 'roles',
-
-                  element:
-                    <AdminRolesPage />,
-                },
-
-                {
-                  path: 'units',
-
-                  element:
-                    <AdminUnitsPage />,
-                },
-
-                {
-                  path: 'users',
-
-                  element:
-                    <AdminUsersPage />,
-                },
-
-                {
-                  path: 'products',
-
-                  element:
-                    <AdminProductsPage />,
-                },
-
-                {
-                  path: 'batches',
-
-                  element:
-                    <AdminBatchesPage />,
-                },
-
-                {
-                  path: 'events',
-
-                  element:
-                    <AdminEventsPage />,
-                },
-
-                {
-                  path:
-                    'inspections',
-
-                  element:
-                    <AdminInspectionsPage />,
-                },
-
-                {
-                  path:
-                    'certificates',
-
-                  element:
-                    <AdminCertificatesPage />,
-                },
-
-                {
-                  path: 'recalls',
-
-                  element:
-                    <AdminRecallsPage />,
-                },
-              ],
-            },
-          ],
-        },
-
-        // ====================
-        // CODE CŨ
-        // ====================
-
-        {
-          element:
-            <AppLayout />,
-
-          children: [
-            {
-              index: true,
-
-              element:
-                <HomePage />,
-            },
-
-            {
-              path: 'users',
-
-              element:
-                <UsersListPage />,
-            },
-          ],
-        },
-      ],
-    },
-
-    {
-      path: '*',
-
-      element:
-        <NotFoundPage />,
-    },
-  ])
+  { path: '*', element: <NotFoundPage /> },
+])

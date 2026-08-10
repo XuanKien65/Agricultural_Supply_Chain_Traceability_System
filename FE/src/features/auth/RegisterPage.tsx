@@ -1,19 +1,32 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Eye, EyeOff, Sprout, Factory, Truck, Store, ClipboardCheck } from 'lucide-react'
+import {
+  Box,
+  Button,
+  IconButton,
+  InputAdornment,
+  Paper,
+  TextField,
+  Typography,
+} from '@mui/material'
+import {
+  Agriculture,
+  FactCheckRounded as ClipboardCheck,
+  Factory,
+  LocalShipping,
+  Storefront,
+  Visibility,
+  VisibilityOff,
+} from '@mui/icons-material'
 import { useAuthStore } from './auth.store'
 import { REGISTERABLE_ROLES, type RegisterableRole } from './auth.types'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Card } from '@/components/ui/Card'
-import { clsx } from 'clsx'
 
-const ROLE_ICONS: Record<RegisterableRole, typeof Sprout> = {
-  Farmer: Sprout,
+const ROLE_ICONS: Record<RegisterableRole, typeof Agriculture> = {
+  Farmer: Agriculture,
   Processor: Factory,
-  Distributor: Truck,
-  Retailer: Store,
+  Distributor: LocalShipping,
+  Retailer: Storefront,
   Inspector: ClipboardCheck,
 }
 
@@ -37,13 +50,7 @@ export function RegisterPage() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
-    if (
-      !fullName.trim() ||
-      !email.trim() ||
-      !password ||
-      !confirmPassword ||
-      !unitName.trim()
-    ) {
+    if (!fullName.trim() || !email.trim() || !password || !confirmPassword || !unitName.trim()) {
       setFormError(t('auth.required'))
       return
     }
@@ -66,114 +73,117 @@ export function RegisterPage() {
 
   const errorMessage =
     formError ??
-    (error === 'emailTaken'
-      ? t('auth.emailTaken')
-      : error && t('auth.invalidCredentials'))
+    (error === 'emailTaken' ? t('auth.emailTaken') : error && t('auth.invalidCredentials'))
 
   return (
-    <div className="flex min-h-full items-center justify-center p-4">
-      <Card className="w-full max-w-lg p-6">
-        <h1 className="text-xl font-semibold">{t('auth.register')}</h1>
-        <p className="mt-1 text-sm text-gray-500">{t('auth.createAccountSubtitle')}</p>
+    <Box sx={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+      <Paper sx={{ width: '100%', maxWidth: 560, p: 4, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
+        <Typography variant="h5" sx={{ fontWeight: 800 }}>
+          {t('auth.register')}
+        </Typography>
+        <Typography sx={{ mt: 0.5, color: 'text.secondary', fontSize: 14 }}>
+          {t('auth.createAccountSubtitle')}
+        </Typography>
 
-        <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
-          <Input
+        <Box component="form" onSubmit={onSubmit} sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
             label={t('auth.fullName')}
             placeholder={t('auth.fullNamePlaceholder')}
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             required
+            fullWidth
           />
-          <Input
+          <TextField
             label={t('auth.email')}
             type="email"
             placeholder={t('auth.emailPlaceholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            fullWidth
           />
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="relative">
-              <Input
-                label={t('auth.password')}
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pr-10"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 bottom-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-            <div>
-              <Input
-                label={t('auth.confirmPassword')}
-                type={showPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                error={confirmMismatch ? t('auth.passwordMismatch') : undefined}
-                required
-              />
-            </div>
-          </div>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+            <TextField
+              label={t('auth.password')}
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton size="small" onClick={() => setShowPassword((v) => !v)}>
+                        {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+            <TextField
+              label={t('auth.confirmPassword')}
+              type={showPassword ? 'text' : 'password'}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              error={confirmMismatch}
+              helperText={confirmMismatch ? t('auth.passwordMismatch') : undefined}
+              required
+            />
+          </Box>
 
-          <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {t('auth.role')}
-            </label>
-            <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5">
+          <Box>
+            <Typography sx={{ fontSize: 14, fontWeight: 600, mb: 1 }}>{t('auth.role')}</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 1 }}>
               {REGISTERABLE_ROLES.map((r) => {
                 const Icon = ROLE_ICONS[r]
                 const active = r === role
                 return (
-                  <button
+                  <Button
                     key={r}
                     type="button"
                     onClick={() => setRole(r)}
-                    className={clsx(
-                      'flex flex-col items-center gap-1 rounded-lg border p-2 text-center text-xs transition-colors',
-                      active
-                        ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-100'
-                        : 'border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800',
-                    )}
+                    variant={active ? 'contained' : 'outlined'}
+                    color={active ? 'primary' : 'inherit'}
+                    sx={{ flexDirection: 'column', gap: 0.5, py: 1, fontSize: 11 }}
                   >
-                    <Icon size={20} />
+                    <Icon fontSize="small" />
                     {t(`auth.roles.${r}`)}
-                  </button>
+                  </Button>
                 )
               })}
-            </div>
-          </div>
+            </Box>
+          </Box>
 
-          <Input
+          <TextField
             label={t('auth.unitName')}
             placeholder={t('auth.unitNamePlaceholder')}
             value={unitName}
             onChange={(e) => setUnitName(e.target.value)}
             required
+            fullWidth
           />
 
-          {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
+          {errorMessage && (
+            <Typography color="error" sx={{ fontSize: 14 }}>
+              {errorMessage}
+            </Typography>
+          )}
 
-          <Button type="submit" loading={status === 'loading'}>
+          <Button type="submit" variant="contained" loading={status === 'loading'} fullWidth>
             {t('auth.register')}
           </Button>
 
-          <p className="text-center text-sm text-gray-500">
+          <Typography sx={{ textAlign: 'center', fontSize: 14, color: 'text.secondary' }}>
             {t('auth.haveAccount')}{' '}
-            <Link to="/login" className="text-brand-600 font-medium hover:underline">
+            <Link to="/login" style={{ color: 'inherit', fontWeight: 600 }}>
               {t('auth.signIn')}
             </Link>
-          </p>
-        </form>
-      </Card>
-    </div>
+          </Typography>
+        </Box>
+      </Paper>
+    </Box>
   )
 }

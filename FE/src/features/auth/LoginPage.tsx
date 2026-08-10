@@ -1,11 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Eye, EyeOff } from 'lucide-react'
+import { Box, Button, IconButton, InputAdornment, Paper, TextField, Typography } from '@mui/material'
+import { Visibility, VisibilityOff } from '@mui/icons-material'
 import { useAuthStore } from './auth.store'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Card } from '@/components/ui/Card'
 
 interface LocationState {
   from?: { pathname: string }
@@ -34,51 +32,70 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-full items-center justify-center p-4">
-      <Card className="w-full max-w-sm p-6">
-        <h1 className="text-xl font-semibold">{t('auth.login')}</h1>
-        <p className="mt-1 text-sm text-gray-500">{t('auth.signInToContinue')}</p>
-        <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
-          <Input
+    <Box sx={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+      <Paper sx={{ width: '100%', maxWidth: 400, p: 4, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
+        <Typography variant="h5" sx={{ fontWeight: 800 }}>
+          {t('auth.login')}
+        </Typography>
+        <Typography sx={{ mt: 0.5, color: 'text.secondary', fontSize: 14 }}>
+          {t('auth.signInToContinue')}
+        </Typography>
+
+        <Box component="form" onSubmit={onSubmit} sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
             label={t('auth.email')}
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            fullWidth
           />
-          <div className="relative">
-            <Input
-              label={t('auth.password')}
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pr-10"
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 bottom-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
+          <TextField
+            label={t('auth.password')}
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            fullWidth
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+
           {error && (
-            <p className="text-sm text-red-600">{t('auth.invalidCredentials')}</p>
+            <Typography color="error" sx={{ fontSize: 14 }}>
+              {t('auth.invalidCredentials')}
+            </Typography>
           )}
-          <Button type="submit" loading={status === 'loading'}>
+
+          <Button type="submit" variant="contained" loading={status === 'loading'} fullWidth>
             {t('auth.login')}
           </Button>
-          <p className="text-center text-xs text-gray-400">admin@gmail.com / 123456</p>
-          <p className="text-center text-sm text-gray-500">
+
+          <Typography sx={{ textAlign: 'center', fontSize: 12, color: 'text.disabled' }}>
+            admin@gmail.com / 123456
+          </Typography>
+
+          <Typography sx={{ textAlign: 'center', fontSize: 14, color: 'text.secondary' }}>
             {t('auth.noAccount')}{' '}
-            <Link to="/register" className="text-brand-600 font-medium hover:underline">
+            <Link to="/register" style={{ color: 'inherit', fontWeight: 600 }}>
               {t('auth.signUp')}
             </Link>
-          </p>
-        </form>
-      </Card>
-    </div>
+          </Typography>
+        </Box>
+      </Paper>
+    </Box>
   )
 }

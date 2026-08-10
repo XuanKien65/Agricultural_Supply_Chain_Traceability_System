@@ -14,13 +14,13 @@ import {
 } from '../admin.store'
 
 import {
-  AdminDataTable,
-  type AdminColumn,
-} from '../components/AdminDataTable'
+  DataTable,
+  type DataTableColumn,
+} from '@/components/ui/DataTable'
 
 import {
   PageHeader,
-} from '../components/PageHeader'
+} from '@/components/ui/PageHeader'
 
 import type {
   SuKien,
@@ -69,7 +69,7 @@ export function AdminEventsPage() {
   }, [search, suKiens])
 
   const columns:
-    AdminColumn<SuKien>[] = [
+    DataTableColumn<SuKien>[] = [
       {
         key: 'event',
 
@@ -78,7 +78,7 @@ export function AdminEventsPage() {
         render: (row) => (
           <Box>
             <Typography
-              fontWeight={800}
+              sx={{ fontWeight: 800 }}
             >
               {row.loaiSuKien}
             </Typography>
@@ -193,7 +193,7 @@ export function AdminEventsPage() {
         }
       />
 
-      <AdminDataTable
+      <DataTable
         rows={rows}
         columns={columns}
         getRowId={(row) =>

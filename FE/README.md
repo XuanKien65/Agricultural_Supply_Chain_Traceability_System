@@ -1,11 +1,8 @@
-# React Base
+# Agricultural Supply Chain Traceability — FE
 
-Production-ready React starter: **React 19 + Vite**, TypeScript (strict),
-Tailwind CSS v4, React Router, **Zustand** (client state) + **TanStack Query**
-(server state), Axios with interceptors, i18next, and Vitest.
-
-> Part of the [Base Solution](../README.md) set. Angular and Vue siblings share
-> the same architecture.
+React 19 + Vite, TypeScript (strict), **MUI** (`@mui/material` + `@mui/icons-material`),
+Zustand (client state) + TanStack Query (server state), Axios with interceptors, i18next,
+and Vitest.
 
 ## Quick start
 
@@ -14,117 +11,168 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-Sign in with **`demo@example.com` / `password`** → open **Users**.
+Đăng nhập demo: **`admin@gmail.com` / `123456`** (role Admin) → vào **/admin**.
 
 ## Scripts
 
 | Script | Purpose |
 |---|---|
-| `npm run dev` | Vite dev server with HMR |
-| `npm run build` | Type-check (`tsc -b`) + production build to `dist/` |
-| `npm run preview` | Serve the production build locally |
+| `npm run dev` | Vite dev server với HMR |
+| `npm run build` | Type-check (`tsc -b`) + build production vào `dist/` |
+| `npm run preview` | Chạy thử bản build production |
 | `npm run lint` | oxlint |
 | `npm run format` / `format:check` | Prettier write / check |
-| `npm run typecheck` | Type-check without emitting |
+| `npm run typecheck` | Type-check, không emit |
 | `npm test` / `test:watch` / `test:coverage` | Vitest |
 
-## Architecture
+## Kiến trúc
 
-State is split by **ownership**:
+State chia theo **ai sở hữu dữ liệu**:
 
-- **Server state** (users, anything fetched) → **TanStack Query**. Caching,
-  refetching, retries, and invalidation live here. See `features/users/users.queries.ts`.
-- **Client/UI state** (auth session, dialogs, filters) → **Zustand** or local
-  component state. See `features/auth/auth.store.ts`.
+- **Server state** (mọi thứ fetch từ API) → **TanStack Query**. Cache, refetch, retry,
+  invalidate nằm ở đây, theo mẫu `<entity>.queries.ts` mô tả bên dưới khi nối API thật.
+- **Client/UI state** (session, dialog, filter, mock data tạm khi chưa có BE) → **Zustand**
+  hoặc local state. Xem `features/auth/auth.store.ts`, `features/admin/admin.store.ts`.
 
-This separation is the single most important convention: **don't put server
-data in Zustand, and don't put UI state in Query.**
+Quy tắc quan trọng nhất: **đừng để server data nằm trong Zustand, và đừng để UI state nằm
+trong Query.**
+
+### UI: chuẩn hoá theo MUI
+
+Toàn bộ UI dùng **MUI** (`sx` prop) — không dùng Tailwind, không dùng thư viện icon nào khác
+ngoài `@mui/icons-material`. Bộ Tailwind ui-kit ban đầu (`Button`/`Card`/`Input`/`Spinner` tự
+viết) đã được gỡ bỏ vì trùng lặp với MUI.
+
+- `config/theme.ts` — `createTheme()` dùng chung, chỉnh màu thương hiệu/typography ở **một
+  chỗ duy nhất**, không hardcode hex trong component.
+- `components/ui/` — component MUI dùng chung cho **mọi** feature: `DataTable`, `StatCard`,
+  `StatusChip`, `PageHeader`, `PageLoader`. Cần bảng/dialog/stat card mới thì tái dùng hoặc
+  mở rộng ở đây trước khi viết riêng trong feature.
+- `layouts/` — `MainLayout` (AppBar top-nav, cho các trang đã đăng nhập ngoài Admin) và
+  `PublicLayout` (shell tối giản, không cần đăng nhập — dùng cho trang tra cứu QR công khai
+  sau này). Admin có `AdminLayout` riêng (sidebar) trong `features/admin/components/`.
 
 ### Folder structure
 
 ```
 src/
 ├── app/                  # App-wide wiring
-│   ├── providers.tsx     # StrictMode + Query + i18n providers
+│   ├── providers.tsx     # StrictMode + MUI Theme + Query + i18n providers
 │   ├── query-client.ts   # TanStack Query defaults (retry, staleTime)
-│   └── router.tsx        # Route table with lazy() code splitting
+│   └── router.tsx        # Route table với lazy() code splitting
 ├── config/
-│   └── env.ts            # Typed access to import.meta.env (single source)
+│   ├── env.ts            # Typed access tới import.meta.env
+│   ├── theme.ts           # MUI theme dùng chung
+│   └── constants.ts       # Hằng số dùng chung (label/màu trạng thái...)
+├── utils/
+│   └── format.ts          # formatCurrency/formatNumber/formatDate/formatDateTime
 ├── lib/
 │   ├── api/
-│   │   ├── http.ts       # Axios instance + interceptors + ApiError
+│   │   ├── http.ts         # Axios instance + interceptors + ApiError
 │   │   └── token-storage.ts
-│   └── i18n/             # i18next init + en/vi locales
+│   └── i18n/               # i18next init + locale en/vi
+├── layouts/
+│   ├── MainLayout.tsx      # Shell cho user đã đăng nhập (trừ Admin)
+│   └── PublicLayout.tsx    # Shell công khai, không cần đăng nhập
 ├── components/
-│   ├── ui/               # Button, Input, Card, Spinner (design-token based)
-│   └── layout/           # AppLayout (nav, language switch, logout)
-├── features/             # Feature-first modules
-│   ├── auth/             # store, api (mock), guard, LoginPage, types
-│   └── users/            # api, queries, types, list page, form dialog
-├── pages/                # Cross-feature pages (Home, NotFound)
-├── hooks/                # Reusable hooks (useDebounce)
+│   └── ui/                 # DataTable, StatCard, StatusChip, PageHeader, PageLoader
+├── features/                # Feature-first — xem quy ước bên dưới
+│   ├── auth/                # Cross-cutting: login/register/RoleRoute/ProtectedRoute
+│   ├── admin/                # Console quản trị (NGOẠI LỆ — xem bên dưới)
+│   ├── batches/               # LoHang — tạo lô, chi tiết lô, danh sách
+│   ├── products/               # SanPham — scaffold rỗng, chưa code
+│   ├── events/                  # SuKien — scaffold rỗng, chưa code
+│   ├── quality/                   # KiemDinh + ChungNhan — scaffold rỗng, chưa code
+│   ├── recalls/                    # CanhBaoThuHoi + ThongBaoThuHoi — scaffold rỗng
+│   ├── dashboard/                    # Thống kê cá nhân theo role — scaffold rỗng
+│   └── trace/                          # Tra cứu QR công khai — scaffold rỗng
+├── pages/                # Trang cross-feature (Home, NotFound)
+├── hooks/                # Custom hook dùng chung (useDebounce)
 ├── test/                 # Vitest setup
 └── main.tsx              # Entry: providers + RouterProvider
 ```
 
+### Quy ước tổ chức `features/`
+
+Chia theo **entity nghiệp vụ** (khớp với các bounded context bên BE: `Products`, `Batches`,
+`Events`, `Inspections`/`Certificates`, `Recalls`, `Dashboard`), **không chia theo role**.
+Lý do: một lô hàng (`LoHang`) được Farmer tạo → Processor xử lý → Distributor vận chuyển →
+Inspector kiểm định → Admin giám sát — nếu chia theo role sẽ phải lặp lại UI 5 lần. Thay vào
+đó, mỗi feature tự xử lý phân quyền bên trong (vd. `BatchesPage` chỉ hiện nút "Tạo lô hàng"
+khi `user.role === 'Farmer'`).
+
+Mỗi feature theo khuôn (những gì chưa cần thì bỏ qua, không tạo file rỗng):
+```
+features/<entity>/
+├── components/          # Component riêng của feature
+├── pages/                # Các trang (List/Detail/Create...)
+├── <entity>.types.ts       # Kiểu dữ liệu
+├── <entity>.api.ts          # Gọi API qua lib/api/http
+├── <entity>.queries.ts        # TanStack Query hooks (khi đã có API thật)
+└── <entity>.store.ts            # Zustand — chỉ khi cần UI state hoặc mock data tạm
+```
+
+**Ngoại lệ duy nhất: `features/admin/`.** Đây là console quản trị tổng (Roles/Units/Users +
+xem toàn bộ dữ liệu mọi entity), không map 1-1 với một bảng DB, nên tổ chức theo role thay vì
+entity. Có `AdminLayout`/`AdminSidebar` riêng.
+
 ### Path alias
 
-`@/` → `src/` (configured in `vite.config.ts` and `tsconfig.app.json`). Import
-`@/features/users/...` rather than long relative paths.
+`@/` → `src/` (cấu hình ở `vite.config.ts` và `tsconfig.app.json`). Import
+`@/features/batches/...` thay vì đường dẫn tương đối dài.
 
 ### HTTP layer (`lib/api/http.ts`)
 
-- **Request interceptor** attaches `Authorization: Bearer <token>`.
-- **Response interceptor** performs a **single, deduplicated** token refresh on
-  `401`, replays the original request, and on failure dispatches an
-  `auth:logout` event the auth store listens for.
-- Every error becomes an **`ApiError`** (`status`, `code`, `fieldErrors`) — UI
-  and queries branch on this, never on raw Axios errors.
+- **Request interceptor** gắn `Authorization: Bearer <token>`.
+- **Response interceptor** thực hiện refresh token **một lần, dedupe** khi gặp `401`, replay
+  lại request gốc, nếu thất bại thì bắn event `auth:logout` cho auth store xử lý.
+- Mọi lỗi được chuẩn hoá thành **`ApiError`** (`status`, `code`, `fieldErrors`) — UI và query
+  luôn branch trên đây, không branch trên raw Axios error.
 
 ### Auth & route guard
 
-`ProtectedRoute` (`features/auth/ProtectedRoute.tsx`) wraps private routes; it
-redirects unauthenticated users to `/login` and restores the intended URL after
-login. The mock lives in `features/auth/auth.api.ts` — replace it with a real
-`http.post('/auth/login')` call (the comment shows exactly how).
+- `ProtectedRoute` (`features/auth/ProtectedRoute.tsx`) — chặn user chưa đăng nhập, redirect
+  `/login` và nhớ URL đích để quay lại sau khi login.
+- `RoleRoute` (`features/auth/RoleRoute.tsx`) — route guard **dùng chung cho mọi role**
+  (`<RoleRoute roles={['Admin']} />`), thay vì viết một guard riêng cho từng role.
+- Mock hiện nằm ở `features/auth/auth.api.ts` — thay bằng `http.post('/auth/login')` thật khi
+  có BE.
 
-## How to add a feature
+## Cách thêm 1 feature mới (entity)
 
-Example: a **Products** feature.
+Ví dụ thêm **Products** (SanPham) cho role không phải Admin dùng:
 
 1. `src/features/products/products.types.ts` — `Product`, `CreateProductInput`.
-2. `products.api.ts` — thin Axios calls using `@/lib/api/http`.
-3. `products.queries.ts` — `useProducts`, `useCreateProduct`, … with a
-   `productKeys` factory (copy the shape from `users.queries.ts`).
-4. `ProductsListPage.tsx` — the UI, using `@/components/ui/*`.
-5. Register a lazy route in `src/app/router.tsx` under the protected layout.
-6. Add nav link in `components/layout/AppLayout.tsx` and i18n keys in
-   `lib/i18n/locales/*.json`.
-7. Add a test next to the component (`*.test.tsx`).
+2. `products.api.ts` — gọi Axios qua `@/lib/api/http`.
+3. `products.queries.ts` — `useProducts`, `useCreateProduct`,... theo mẫu `productKeys` factory.
+4. `pages/ProductsListPage.tsx` — UI, dùng `@/components/ui/*` (DataTable, PageHeader...).
+5. Đăng ký route lazy trong `src/app/router.tsx`, bọc trong `MainLayout` (hoặc `RoleRoute` nếu
+   cần giới hạn role).
+6. Thêm key i18n trong `lib/i18n/locales/*.json`.
+7. Thêm test cạnh component (`*.test.tsx`).
 
 ## Testing
 
-Vitest + Testing Library, jsdom environment, setup in `src/test/setup.ts`.
-Example: `src/components/ui/Button.test.tsx`. Run `npm test`.
+Vitest + Testing Library, môi trường jsdom, setup ở `src/test/setup.ts`. Chạy `npm test`.
 
 ## Configuration
 
-Copy `.env.example` → `.env`. Client-exposed vars must be prefixed `VITE_`:
+Copy `.env.example` → `.env`. Biến lộ ra client phải có tiền tố `VITE_`:
 
-| Var | Meaning |
+| Var | Ý nghĩa |
 |---|---|
-| `VITE_APP_NAME` | Display name |
-| `VITE_API_BASE_URL` | Backend base URL (defaults to a public mock) |
-| `VITE_DEFAULT_LOCALE` | Fallback language |
-| `VITE_ENABLE_MOCK` | Reserved flag for mock toggles |
+| `VITE_APP_NAME` | Tên hiển thị |
+| `VITE_API_BASE_URL` | Base URL của BE |
+| `VITE_DEFAULT_LOCALE` | Ngôn ngữ mặc định |
+| `VITE_ENABLE_MOCK` | Cờ dự phòng cho mock toggle |
 
-`.env.production` sets `VITE_API_BASE_URL=/api` for reverse-proxy deployment.
+`.env.production` set `VITE_API_BASE_URL=/api` cho reverse-proxy deployment.
 
 ## Docker
 
 ```bash
-docker build -t react-base .
-docker run -p 8080:80 react-base
+docker build -t agri-trace-fe .
+docker run -p 8080:80 agri-trace-fe
 ```
 
-Multi-stage build (Node → nginx). `nginx.conf` has SPA fallback + asset caching.
+Multi-stage build (Node → nginx). `nginx.conf` có SPA fallback + asset caching.
