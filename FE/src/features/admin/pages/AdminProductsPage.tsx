@@ -12,13 +12,13 @@ import {
 } from '../admin.store'
 
 import {
-  AdminDataTable,
-  type AdminColumn,
-} from '../components/AdminDataTable'
+  DataTable,
+  type DataTableColumn,
+} from '@/components/ui/DataTable'
 
 import {
   PageHeader,
-} from '../components/PageHeader'
+} from '@/components/ui/PageHeader'
 
 import type {
   SanPham,
@@ -55,7 +55,7 @@ export function AdminProductsPage() {
   }, [sanPhams, search])
 
   const columns:
-    AdminColumn<SanPham>[] = [
+    DataTableColumn<SanPham>[] = [
       {
         key: 'id',
 
@@ -76,7 +76,7 @@ export function AdminProductsPage() {
 
         render: (row) => (
           <Typography
-            fontWeight={800}
+            sx={{ fontWeight: 800 }}
           >
             {row.tenSanPham}
           </Typography>
@@ -116,7 +116,7 @@ export function AdminProductsPage() {
         }
       />
 
-      <AdminDataTable
+      <DataTable
         rows={rows}
         columns={columns}
         getRowId={(row) =>

@@ -226,13 +226,13 @@ export function AdminSidebar({
                 primary={
                   item.label
                 }
-                primaryTypographyProps={{
-                  fontSize: 14,
-
-                  fontWeight:
-                    active
-                      ? 800
-                      : 600,
+                slotProps={{
+                  primary: {
+                    sx: {
+                      fontSize: 14,
+                      fontWeight: active ? 800 : 600,
+                    },
+                  },
                 }}
               />
             </ListItemButton>

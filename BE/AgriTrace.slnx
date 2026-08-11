@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="AgriTrace.API/AgriTrace.API.csproj" />
+  <Project Path="AgriTrace.Application/AgriTrace.Application.csproj" />
+  <Project Path="AgriTrace.Domain/AgriTrace.Domain.csproj" />
+  <Project Path="AgriTrace.Infrastructure.Sqlserver/AgriTrace.Infrastructure.Sqlserver.csproj" />
+</Solution>

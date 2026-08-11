@@ -14,17 +14,17 @@ import {
 } from '../admin.store'
 
 import {
-  AdminDataTable,
-  type AdminColumn,
-} from '../components/AdminDataTable'
+  DataTable,
+  type DataTableColumn,
+} from '@/components/ui/DataTable'
 
 import {
   PageHeader,
-} from '../components/PageHeader'
+} from '@/components/ui/PageHeader'
 
 import {
   StatusChip,
-} from '../components/StatusChip'
+} from '@/components/ui/StatusChip'
 
 import type {
   CanhBaoThuHoi,
@@ -89,7 +89,7 @@ export function AdminRecallsPage() {
   ])
 
   const alertColumns:
-    AdminColumn<CanhBaoThuHoi>[] =
+    DataTableColumn<CanhBaoThuHoi>[] =
       [
         {
           key: 'id',
@@ -98,7 +98,7 @@ export function AdminRecallsPage() {
 
           render: (row) => (
             <Typography
-              fontWeight={800}
+              sx={{ fontWeight: 800 }}
             >
               CB-
               {
@@ -204,7 +204,7 @@ export function AdminRecallsPage() {
       ]
 
   const notificationColumns:
-    AdminColumn<ThongBaoThuHoi>[] =
+    DataTableColumn<ThongBaoThuHoi>[] =
       [
         {
           key: 'id',
@@ -304,7 +304,7 @@ export function AdminRecallsPage() {
           Danh sách cảnh báo
         </Typography>
 
-        <AdminDataTable
+        <DataTable
           rows={alerts}
           columns={
             alertColumns
@@ -327,7 +327,7 @@ export function AdminRecallsPage() {
           Thông báo tới đơn vị
         </Typography>
 
-        <AdminDataTable
+        <DataTable
           rows={
             thongBaoThuHois
           }

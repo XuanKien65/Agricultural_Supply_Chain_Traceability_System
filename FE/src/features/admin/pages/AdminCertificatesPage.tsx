@@ -13,13 +13,13 @@ import {
 } from '../admin.store'
 
 import {
-  AdminDataTable,
-  type AdminColumn,
-} from '../components/AdminDataTable'
+  DataTable,
+  type DataTableColumn,
+} from '@/components/ui/DataTable'
 
 import {
   PageHeader,
-} from '../components/PageHeader'
+} from '@/components/ui/PageHeader'
 
 import type {
   ChungNhan,
@@ -56,7 +56,7 @@ export function AdminCertificatesPage() {
   }, [chungNhans, search])
 
   const columns:
-    AdminColumn<ChungNhan>[] =
+    DataTableColumn<ChungNhan>[] =
       [
         {
           key: 'type',
@@ -66,7 +66,7 @@ export function AdminCertificatesPage() {
 
           render: (row) => (
             <Typography
-              fontWeight={800}
+              sx={{ fontWeight: 800 }}
             >
               {
                 row.loaiChungNhan
@@ -162,7 +162,7 @@ export function AdminCertificatesPage() {
         }
       />
 
-      <AdminDataTable
+      <DataTable
         rows={rows}
         columns={columns}
         getRowId={(row) =>

@@ -1,33 +1,29 @@
-import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { Card } from '@/components/ui/Card'
+import { useTranslation } from 'react-i18next'
+import { Box, Button, Paper, Typography } from '@mui/material'
+import { useAuthStore } from '@/features/auth/auth.store'
 
 export function HomePage() {
   const { t } = useTranslation()
-  const features = [
-    'React 19 + Vite',
-    'TanStack Query + Zustand',
-    'Tailwind CSS v4',
-    'i18n (en/vi)',
-    'Axios API layer + guards',
-    'Vitest + Testing Library',
-  ]
+  const user = useAuthStore((state) => state.user)
+
   return (
-    <section className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-3xl font-bold">{t('app.name')}</h1>
-        <p className="mt-2 text-gray-500">{t('app.tagline')}</p>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {features.map((f) => (
-          <Card key={f} className="p-4 text-sm font-medium">
-            {f}
-          </Card>
-        ))}
-      </div>
-      <Link to="/users" className="text-brand-600 hover:underline">
-        {t('nav.users')} →
-      </Link>
-    </section>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <Box>
+        <Typography variant="h4" sx={{ fontWeight: 900 }}>
+          {t('app.name')}
+        </Typography>
+        <Typography sx={{ mt: 1, color: 'text.secondary' }}>{t('app.tagline')}</Typography>
+      </Box>
+
+      <Paper sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 3, maxWidth: 480 }}>
+        <Typography sx={{ fontWeight: 700 }}>
+          {user ? `${user.name} • ${user.role}` : t('auth.signInToContinue')}
+        </Typography>
+        <Button component={Link} to={user?.role === 'Admin' ? '/admin' : '/batches'} variant="contained" sx={{ mt: 2 }}>
+          {t('nav.batches')} →
+        </Button>
+      </Paper>
+    </Box>
   )
 }

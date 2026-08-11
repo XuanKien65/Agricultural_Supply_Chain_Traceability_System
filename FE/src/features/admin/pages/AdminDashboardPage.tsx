@@ -14,12 +14,12 @@ import {
 import { useAdminStore } from '../admin.store'
 
 import {
-  AdminDataTable,
-  type AdminColumn,
-} from '../components/AdminDataTable'
+  DataTable,
+  type DataTableColumn,
+} from '@/components/ui/DataTable'
 
-import { StatCard } from '../components/StatCard'
-import { StatusChip } from '../components/StatusChip'
+import { StatCard } from '@/components/ui/StatCard'
+import { StatusChip } from '@/components/ui/StatusChip'
 
 import type { LoHang } from '../admin.types'
 
@@ -53,14 +53,14 @@ export function AdminDashboardPage() {
     )
 
   const columns:
-    AdminColumn<LoHang>[] = [
+    DataTableColumn<LoHang>[] = [
       {
         key: 'id',
         label: 'Mã lô',
 
         render: (row) => (
           <Typography
-            fontWeight={800}
+            sx={{ fontWeight: 800 }}
           >
             LH-{row.maLoHang}
           </Typography>
@@ -231,7 +231,7 @@ export function AdminDashboardPage() {
             Lô hàng gần đây
           </Typography>
 
-          <AdminDataTable
+          <DataTable
             rows={loHangs.slice(
               0,
               5,
@@ -296,9 +296,7 @@ export function AdminDashboardPage() {
                   }}
                 >
                   <Typography
-                    fontWeight={
-                      800
-                    }
+                    sx={{ fontWeight: 800 }}
                   >
                     LH-
                     {
