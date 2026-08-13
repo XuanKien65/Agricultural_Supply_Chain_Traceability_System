@@ -17,6 +17,7 @@ export interface AuthUser {
   email: string
   role: Role
   unitName: string | null
+  organizationId?: number
 }
 
 export interface LoginPayload {

@@ -20,7 +20,7 @@ export function MainLayout() {
           <Typography sx={{ fontWeight: 900, color: 'primary.main' }}>{t('app.name')}</Typography>
 
           <Box sx={{ display: 'flex', gap: 1, flex: 1 }}>
-            <Button component={NavLink} to="/" end size="small" color="inherit">
+            <Button component={NavLink} to="/farmer" end size="small" color="inherit">
               {t('nav.home')}
             </Button>
             <Button component={NavLink} to="/batches" size="small" color="inherit">

@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "React Base",
-    "tagline": "Khởi tạo React sẵn sàng cho production"
+    "name": "AgriTrace",
+    "tagline": "Minh bạch hành trình nông sản từ nông trại đến người tiêu dùng"
   },
   "nav": {
     "home": "Trang chủ",

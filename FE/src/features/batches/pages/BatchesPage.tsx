@@ -1,110 +1,19 @@
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
-import { Box, Button, Paper, Typography } from '@mui/material'
-import { Inventory2Rounded, LocalShippingRounded, TaskAltRounded } from '@mui/icons-material'
-import { useAuthStore } from '@/features/auth/auth.store'
-import { StatCard } from '@/components/ui/StatCard'
+import { Box, Button, MenuItem, Paper, TextField, Typography } from '@mui/material'
+import { AddRounded } from '@mui/icons-material'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { StatusChip } from '@/components/ui/StatusChip'
-import { useBatchesStore } from '../batches.store'
+import { useAuthStore } from '@/features/auth/auth.store'
+import { useFarmerBatches } from '../batches.queries'
 
 export function BatchesPage() {
-  const { t } = useTranslation()
-  const user = useAuthStore((state) => state.user)
-  const batches = useBatchesStore((state) => state.batches)
-  const setSelectedBatchId = useBatchesStore((state) => state.setSelectedBatchId)
-
-  const canCreate = user?.role === 'Farmer'
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', gap: 2 }}>
-        <Box>
-          <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'primary.main', textTransform: 'uppercase' }}>
-            {t('batches.portal')}
-          </Typography>
-          <Typography variant="h4" sx={{ fontWeight: 900 }}>
-            {t('batches.title')}
-          </Typography>
-          <Typography sx={{ mt: 0.5, color: 'text.secondary', fontSize: 14 }}>{t('batches.subtitle')}</Typography>
-        </Box>
-        {canCreate && (
-          <Button component={Link} to="/batches/new" variant="contained">
-            {t('batches.create')}
-          </Button>
-        )}
-      </Box>
-
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>
-        <StatCard
-          title={t('batches.totalBatches')}
-          value={batches.length}
-          description={t('batches.title')}
-          icon={<Inventory2Rounded />}
-          iconBg="#E8F5E9"
-          iconColor="#19713A"
-        />
-        <StatCard
-          title={t('batches.created')}
-          value={batches.filter((b) => b.trangThai === 'Created').length}
-          description={t('batches.created')}
-          icon={<TaskAltRounded />}
-          iconBg="#E3F2FD"
-          iconColor="#1565C0"
-        />
-        <StatCard
-          title={t('batches.inTransit')}
-          value={batches.filter((b) => b.trangThai === 'InTransit').length}
-          description={t('batches.inTransit')}
-          icon={<LocalShippingRounded />}
-          iconBg="#FFF3E0"
-          iconColor="#E65100"
-        />
-      </Box>
-
-      <Paper sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
-        <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography sx={{ fontWeight: 800 }}>{t('batches.title')}</Typography>
-          <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('batches.recentActivity')}</Typography>
-        </Box>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {batches.map((batch) => (
-            <Box
-              key={batch.maLoHang}
-              sx={{
-                display: 'flex',
-                flexDirection: { xs: 'column', md: 'row' },
-                gap: 1.5,
-                alignItems: { md: 'center' },
-                justifyContent: 'space-between',
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 2,
-                p: 2,
-              }}
-            >
-              <Box>
-                <Typography sx={{ fontWeight: 700 }}>{batch.tenSanPham}</Typography>
-                <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
-                  {batch.maLoHang} • {batch.tenDonViSanXuat} • {batch.viTri}
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <StatusChip status={batch.trangThai} />
-                <Button
-                  component={Link}
-                  to={`/batches/${batch.maLoHang}`}
-                  size="small"
-                  variant="outlined"
-                  onClick={() => setSelectedBatchId(batch.maLoHang)}
-                >
-                  {t('batches.viewDetails')}
-                </Button>
-              </Box>
-            </Box>
-          ))}
-        </Box>
-      </Paper>
-    </Box>
-  )
+  const user = useAuthStore(s => s.user); const orgId = user?.organizationId ?? 1
+  const { data = [], isLoading } = useFarmerBatches(orgId); const [search,setSearch]=useState(''); const [status,setStatus]=useState('')
+  const rows=useMemo(()=>data.filter(x=>(!status||x.status===status)&&(`${x.batchCode} ${x.productName}`.toLowerCase().includes(search.toLowerCase()))),[data,search,status])
+  return <Box sx={{display:'flex',flexDirection:'column',gap:3}}>
+    <PageHeader title="Lô hàng của nông trại" description="Quản lý lô nông sản từ thời điểm thu hoạch và định danh QR." action={<Button component={Link} to="/batches/new" variant="contained" startIcon={<AddRounded/>}>Tạo lô hàng</Button>}/>
+    <Paper sx={{p:2,border:'1px solid',borderColor:'divider',borderRadius:3,display:'flex',gap:2,flexWrap:'wrap'}}><TextField size="small" label="Tìm mã lô hoặc sản phẩm" value={search} onChange={e=>setSearch(e.target.value)} sx={{minWidth:280}}/><TextField select size="small" label="Trạng thái" value={status} onChange={e=>setStatus(e.target.value)} sx={{minWidth:180}}><MenuItem value="">Tất cả</MenuItem><MenuItem value="Created">Mới tạo</MenuItem><MenuItem value="InTransit">Đang vận chuyển</MenuItem><MenuItem value="Recalled">Thu hồi</MenuItem></TextField></Paper>
+    <Paper sx={{p:3,border:'1px solid',borderColor:'divider',borderRadius:3}}>{isLoading?<Typography>Đang tải…</Typography>:rows.length===0?<Typography color="text.secondary">Không có lô hàng phù hợp.</Typography>:rows.map(x=><Box key={x.batchId} sx={{py:2,borderBottom:'1px solid',borderColor:'divider',display:'grid',gridTemplateColumns:{xs:'1fr',md:'2fr 1fr 1fr auto'},gap:2,alignItems:'center'}}><Box><Typography sx={{fontWeight:800}}>{x.productName}</Typography><Typography variant="body2" color="text.secondary">{x.batchCode}</Typography></Box><Typography>{x.weight.toLocaleString('vi-VN')} {x.unit}</Typography><StatusChip status={x.status}/><Button component={Link} to={`/batches/${x.batchId}`} variant="outlined" size="small">Xem chi tiết</Button></Box>)}</Paper>
+  </Box>
 }
