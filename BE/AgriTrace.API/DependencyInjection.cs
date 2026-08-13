@@ -1,29 +1,45 @@
 using System.Reflection;
 using AgriTrace.API.Common;
 using Mapster;
-using Microsoft.Extensions.DependencyInjection;
 
-namespace AgriTrace.API
+namespace AgriTrace.API;
+
+public static class DependencyInjection
 {
-    public static class DependencyInjection
+    public const string FrontendCorsPolicy = "FrontendCors";
+
+    public static IServiceCollection AddPresentation(
+        this IServiceCollection services)
     {
-        public static IServiceCollection AddPresentation(this IServiceCollection services)
+        services.AddControllers(options =>
         {
-            // Register API controllers + tự động bọc mọi kết quả vào ApiResponse.
-            services.AddControllers(options =>
-            {
-                options.Filters.Add<ApiResponseWrapperFilter>();
-            });
+            options.Filters.Add<ApiResponseWrapperFilter>();
+        });
 
-            // Chuyển mọi exception chưa xử lý thành envelope ApiResponse.
-            services.AddExceptionHandler<GlobalExceptionHandler>();
-            services.AddProblemDetails();
+        services.AddExceptionHandler<GlobalExceptionHandler>();
 
-            // Set up Mapster configurations for API
-            var config = TypeAdapterConfig.GlobalSettings;
-            config.Scan(Assembly.GetExecutingAssembly());
+        services.AddProblemDetails();
 
-            return services;
-        }
+        // Cho phép React FE localhost:5173 gọi sang Backend.
+        services.AddCors(options =>
+        {
+            options.AddPolicy(
+                FrontendCorsPolicy,
+                policy =>
+                {
+                    policy
+                        .WithOrigins(
+                            "http://localhost:5173",
+                            "https://localhost:5173")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                });
+        });
+
+        var config = TypeAdapterConfig.GlobalSettings;
+
+        config.Scan(Assembly.GetExecutingAssembly());
+
+        return services;
     }
 }

@@ -4,341 +4,456 @@ import {
 } from 'react'
 
 import {
-  Box,
-  Button,
-  Typography,
-} from '@mui/material'
+  AddRounded,
+} from '@mui/icons-material'
 
 import {
-  useAdminStore,
-} from '../admin.store'
+  Alert,
+  Button,
+  Snackbar,
+  Typography,
+} from '@mui/material'
 
 import {
   DataTable,
   type DataTableColumn,
 } from '@/components/ui/DataTable'
 
-import {
-  PageHeader,
-} from '@/components/ui/PageHeader'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { PageLoader } from '@/components/ui/PageLoader'
+import { StatusChip } from '@/components/ui/StatusChip'
+import { formatDateTime } from '@/utils/format'
 
 import {
-  StatusChip,
-} from '@/components/ui/StatusChip'
+  useAdminBatches,
+  useAdminRecalls,
+  useAdminUsers,
+  useRecallCrud,
+} from '../admin.queries'
 
 import type {
-  CanhBaoThuHoi,
-  ThongBaoThuHoi,
+  AdminRecall,
+  AdminRecallPayload,
 } from '../admin.types'
 
+import {
+  AdminFormDialog,
+  type FormValues,
+} from '../components/AdminFormDialog'
+
+import { AdminRowActions } from '../components/AdminRowActions'
+
 export function AdminRecallsPage() {
-  const canhBaoThuHois =
-    useAdminStore(
-      (state) =>
-        state.canhBaoThuHois,
-    )
+  const recalls =
+    useAdminRecalls()
 
-  const thongBaoThuHois =
-    useAdminStore(
-      (state) =>
-        state.thongBaoThuHois,
-    )
+  const batches =
+    useAdminBatches()
 
-  const nguoiDungs =
-    useAdminStore(
-      (state) =>
-        state.nguoiDungs,
-    )
+  const users =
+    useAdminUsers()
 
-  const donVis =
-    useAdminStore(
-      (state) =>
-        state.donVis,
-    )
-
-  const resolveCanhBao =
-    useAdminStore(
-      (state) =>
-        state.resolveCanhBao,
-    )
+  const crud =
+    useRecallCrud()
 
   const [
     search,
     setSearch,
   ] = useState('')
 
-  const alerts = useMemo(() => {
-    const q =
-      search
-        .trim()
-        .toLowerCase()
+  const [
+    editing,
+    setEditing,
+  ] =
+    useState<AdminRecall | null>(
+      null,
+    )
 
-    if (!q) {
-      return canhBaoThuHois
+  const [
+    open,
+    setOpen,
+  ] = useState(false)
+
+  const [
+    message,
+    setMessage,
+  ] = useState('')
+
+  const data =
+    recalls.data ?? []
+
+  const rows =
+    useMemo(() => {
+      const q =
+        search
+          .trim()
+          .toLowerCase()
+
+      if (!q)
+        return data
+
+      return data.filter(
+        item =>
+          `${
+            item.batchCode ??
+            ''
+          } ${
+            item.reason ?? ''
+          } ${
+            item.severity ??
+            ''
+          } ${
+            item.createdByName ??
+            ''
+          }`
+            .toLowerCase()
+            .includes(q),
+      )
+    }, [
+      data,
+      search,
+    ])
+
+  if (
+    recalls.isLoading ||
+    batches.isLoading ||
+    users.isLoading
+  ) {
+    return (
+      <PageLoader label="Đang tải thu hồi..." />
+    )
+  }
+
+  const error =
+    recalls.error ??
+    batches.error ??
+    users.error
+
+  if (error) {
+    return (
+      <Alert severity="error">
+        {error instanceof Error
+          ? error.message
+          : 'Không tải được thu hồi.'}
+      </Alert>
+    )
+  }
+
+  async function save(
+    values: FormValues,
+  ) {
+    const payload:
+      AdminRecallPayload =
+      {
+        batchId:
+          Number(
+            values.batchId,
+          ),
+
+        reason:
+          String(
+            values.reason || '',
+          ) || null,
+
+        severity:
+          String(
+            values.severity ||
+              '',
+          ) || null,
+
+        createdBy:
+          Number(
+            values.createdBy,
+          ),
+      }
+
+    if (editing) {
+      await crud.update.mutateAsync({
+        id: editing.id,
+        payload,
+      })
+
+      setMessage(
+        'Đã cập nhật thu hồi.',
+      )
+    } else {
+      await crud.create.mutateAsync(
+        payload,
+      )
+
+      setMessage(
+        'Đã tạo thu hồi.',
+      )
     }
 
-    return canhBaoThuHois.filter(
-      (item) =>
-        `CB-${item.maCanhBao} LH-${item.maLoHang} ${item.lyDo} ${item.mucDoNghiemTrong}`
-          .toLowerCase()
-          .includes(q),
+    setOpen(false)
+    setEditing(null)
+  }
+
+  async function remove(
+    row: AdminRecall,
+  ) {
+    if (
+      !window.confirm(
+        `Xóa thu hồi RC-${row.id}?`,
+      )
+    ) {
+      return
+    }
+
+    await crud.remove.mutateAsync(
+      row.id,
     )
-  }, [
-    canhBaoThuHois,
-    search,
-  ])
 
-  const alertColumns:
-    DataTableColumn<CanhBaoThuHoi>[] =
-      [
-        {
-          key: 'id',
+    setMessage(
+      'Đã xóa thu hồi.',
+    )
+  }
 
-          label: 'Cảnh báo',
+  const columns:
+    DataTableColumn<AdminRecall>[] =
+    [
+      {
+        key: 'id',
+        label: 'Mã',
 
-          render: (row) => (
-            <Typography
-              sx={{ fontWeight: 800 }}
-            >
-              CB-
-              {
-                row.maCanhBao
-              }
-            </Typography>
-          ),
-        },
+        render: row => (
+          <Typography
+            sx={{
+              fontWeight: 800,
+            }}
+          >
+            RC-{row.id}
+          </Typography>
+        ),
+      },
 
-        {
-          key: 'batch',
+      {
+        key: 'batch',
+        label: 'Lô hàng',
 
-          label: 'Lô hàng',
+        render: row =>
+          row.batchCode ??
+          `#${row.batchId}`,
+      },
 
-          render: (row) =>
-            `LH-${row.maLoHang}`,
-        },
+      {
+        key: 'severity',
+        label: 'Mức độ',
 
-        {
-          key: 'creator',
-
-          label:
-            'Người tạo',
-
-          render: (row) =>
-            nguoiDungs.find(
-              (item) =>
-                item.maNguoiDung ===
-                row.maNguoiTao,
-            )?.hoTen ?? '-',
-        },
-
-        {
-          key: 'reason',
-
-          label: 'Lý do',
-
-          minWidth: 300,
-
-          render: (row) =>
-            row.lyDo,
-        },
-
-        {
-          key: 'severity',
-
-          label: 'Mức độ',
-
-          render: (row) => (
+        render: row =>
+          row.severity ? (
             <StatusChip
               status={
-                row.mucDoNghiemTrong
+                row.severity
               }
             />
+          ) : (
+            '-'
           ),
-        },
+      },
 
-        {
-          key: 'status',
+      {
+        key: 'reason',
+        label: 'Lý do',
+        minWidth: 260,
 
-          label:
-            'Trạng thái',
+        render: row =>
+          row.reason ?? '-',
+      },
 
-          render: (row) => (
-            <StatusChip
-              status={
-                row.trangThai
-              }
-            />
+      {
+        key: 'creator',
+        label: 'Người tạo',
+
+        render: row =>
+          row.createdByName ??
+          `#${row.createdBy}`,
+      },
+
+      {
+        key: 'date',
+        label: 'Ngày tạo',
+
+        render: row =>
+          formatDateTime(
+            row.createdAt,
           ),
-        },
+      },
 
-        {
-          key: 'action',
+      {
+        key: 'actions',
+        label: 'Thao tác',
+        align: 'right',
 
-          label: 'Thao tác',
-
-          align: 'right',
-
-          render: (row) =>
-            row.trangThai ===
-            'Active' ? (
-              <Button
-                size="small"
-                onClick={() =>
-                  resolveCanhBao(
-                    row.maCanhBao,
-                  )
-                }
-                sx={{
-                  color:
-                    '#19713A',
-
-                  fontWeight: 800,
-                }}
-              >
-                Đánh dấu đã xử lý
-              </Button>
-            ) : (
-              '-'
-            ),
-        },
-      ]
-
-  const notificationColumns:
-    DataTableColumn<ThongBaoThuHoi>[] =
-      [
-        {
-          key: 'id',
-
-          label: 'Thông báo',
-
-          render: (row) =>
-            `TB-${row.maThongBao}`,
-        },
-
-        {
-          key: 'alert',
-
-          label: 'Cảnh báo',
-
-          render: (row) =>
-            `CB-${row.maCanhBao}`,
-        },
-
-        {
-          key: 'unit',
-
-          label:
-            'Đơn vị nhận',
-
-          minWidth: 250,
-
-          render: (row) =>
-            donVis.find(
-              (item) =>
-                item.maDonVi ===
-                row.maDonVi,
-            )?.tenDonVi ?? '-',
-        },
-
-        {
-          key: 'time',
-
-          label:
-            'Thời gian gửi',
-
-          render: (row) =>
-            new Date(
-              row.thoiGianGui,
-            ).toLocaleString(
-              'vi-VN',
-            ),
-        },
-
-        {
-          key: 'status',
-
-          label: 'Xác nhận',
-
-          render: (row) => (
-            <StatusChip
-              status={
-                row.trangThaiXacNhan
-              }
-            />
-          ),
-        },
-
-        {
-          key: 'note',
-
-          label:
-            'Ghi chú xử lý',
-
-          minWidth: 250,
-
-          render: (row) =>
-            row.ghiChuXuLy,
-        },
-      ]
+        render: row => (
+          <AdminRowActions
+            deleting={
+              crud.remove.isPending
+            }
+            onEdit={() => {
+              setEditing(row)
+              setOpen(true)
+            }}
+            onDelete={() =>
+              void remove(row)
+            }
+          />
+        ),
+      },
+    ]
 
   return (
     <>
       <PageHeader
         title="Cảnh báo thu hồi"
-        description="CanhBaoThuHoi và ThongBaoThuHoi trong ERD."
+        description="CRUD bảng Recalls."
         search={search}
         onSearchChange={
           setSearch
         }
+        action={
+          <Button
+            variant="contained"
+            startIcon={
+              <AddRounded />
+            }
+            onClick={() => {
+              setEditing(null)
+              setOpen(true)
+            }}
+          >
+            Tạo thu hồi
+          </Button>
+        }
       />
 
-      <Box sx={{ mb: 4 }}>
-        <Typography
-          sx={{
-            mb: 1.5,
+      <DataTable
+        rows={rows}
+        columns={columns}
+        getRowId={row =>
+          row.id
+        }
+      />
 
-            fontSize: 19,
-            fontWeight: 900,
-          }}
-        >
-          Danh sách cảnh báo
-        </Typography>
+      <AdminFormDialog
+        open={open}
+        title={
+          editing
+            ? 'Sửa thu hồi'
+            : 'Tạo thu hồi'
+        }
+        saving={
+          crud.create.isPending ||
+          crud.update.isPending
+        }
+        initial={
+          editing
+            ? {
+                batchId:
+                  editing.batchId,
 
-        <DataTable
-          rows={alerts}
-          columns={
-            alertColumns
-          }
-          getRowId={(row) =>
-            row.maCanhBao
-          }
-        />
-      </Box>
+                reason:
+                  editing.reason ??
+                  '',
 
-      <Box>
-        <Typography
-          sx={{
-            mb: 1.5,
+                severity:
+                  editing.severity ??
+                  'HIGH',
 
-            fontSize: 19,
-            fontWeight: 900,
-          }}
-        >
-          Thông báo tới đơn vị
-        </Typography>
+                createdBy:
+                  editing.createdBy,
+              }
+            : {
+                batchId:
+                  batches
+                    .data?.[0]
+                    ?.id ?? '',
 
-        <DataTable
-          rows={
-            thongBaoThuHois
-          }
-          columns={
-            notificationColumns
-          }
-          getRowId={(row) =>
-            row.maThongBao
-          }
-        />
-      </Box>
+                reason: '',
+
+                severity:
+                  'HIGH',
+
+                createdBy:
+                  users
+                    .data?.[0]
+                    ?.id ?? '',
+              }
+        }
+        fields={[
+          {
+            name: 'batchId',
+            label: 'Lô hàng',
+            type: 'select',
+            required: true,
+
+            options: (
+              batches.data ??
+              []
+            ).map(item => ({
+              value: item.id,
+              label:
+                item.batchCode,
+            })),
+          },
+
+          {
+            name: 'reason',
+            label: 'Lý do',
+            type: 'multiline',
+          },
+
+          {
+            name: 'severity',
+            label: 'Mức độ',
+            type: 'select',
+
+            options: [
+              'LOW',
+              'MEDIUM',
+              'HIGH',
+              'CRITICAL',
+            ].map(value => ({
+              value,
+              label: value,
+            })),
+          },
+
+          {
+            name: 'createdBy',
+            label: 'Người tạo',
+            type: 'select',
+            required: true,
+
+            options: (
+              users.data ?? []
+            ).map(item => ({
+              value: item.id,
+
+              label:
+                item.fullName ??
+                item.email,
+            })),
+          },
+        ]}
+        onClose={() => {
+          setOpen(false)
+          setEditing(null)
+        }}
+        onSave={values =>
+          void save(values)
+        }
+      />
+
+      <Snackbar
+        open={Boolean(message)}
+        autoHideDuration={2200}
+        message={message}
+        onClose={() =>
+          setMessage('')
+        }
+      />
     </>
   )
 }

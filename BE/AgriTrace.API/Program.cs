@@ -4,29 +4,39 @@ using AgriTrace.Infrastructure.Sqlserver;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Controller + Exception + CORS
 builder.Services.AddPresentation();
-builder.Services.AddApplication();
-builder.Services.AddInfrastructureSqlServer(builder.Configuration);
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+// Application
+builder.Services.AddApplication();
+
+// SQL Server
+builder.Services.AddInfrastructureSqlServer(
+    builder.Configuration);
+
+// Swagger
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Bắt mọi exception chưa xử lý và trả về envelope ApiResponse (qua GlobalExceptionHandler).
 app.UseExceptionHandler();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
     app.UseSwagger();
+
     app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
+
+// QUAN TRỌNG:
+// CORS phải nằm trước Authorization và MapControllers.
+app.UseCors(
+    AgriTrace.API.DependencyInjection.FrontendCorsPolicy);
 
 app.UseAuthorization();
 

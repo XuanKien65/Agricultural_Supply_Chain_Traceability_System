@@ -1,163 +1,132 @@
 import {
   ApartmentRounded,
-  LocalShippingRounded,
+  Inventory2Rounded,
   PeopleAltRounded,
   WarningAmberRounded,
 } from '@mui/icons-material'
 
 import {
+  Alert,
   Box,
-  Paper,
   Typography,
 } from '@mui/material'
-
-import { useAdminStore } from '../admin.store'
 
 import {
   DataTable,
   type DataTableColumn,
 } from '@/components/ui/DataTable'
 
+import { PageHeader } from '@/components/ui/PageHeader'
+import { PageLoader } from '@/components/ui/PageLoader'
 import { StatCard } from '@/components/ui/StatCard'
-import { StatusChip } from '@/components/ui/StatusChip'
 
-import type { LoHang } from '../admin.types'
+import {
+  formatDateTime,
+  formatNumber,
+} from '@/utils/format'
+
+import {
+  useAdminDashboard,
+} from '../admin.queries'
+
+import type {
+  AdminBatch,
+} from '../admin.types'
 
 export function AdminDashboardPage() {
-  const donVis =
-    useAdminStore(
-      (state) => state.donVis,
-    )
+  const {
+    data,
+    isLoading,
+    error,
+  } = useAdminDashboard()
 
-  const nguoiDungs =
-    useAdminStore(
-      (state) =>
-        state.nguoiDungs,
+  if (isLoading) {
+    return (
+      <PageLoader label="Đang tải dữ liệu Admin..." />
     )
+  }
 
-  const loHangs =
-    useAdminStore(
-      (state) => state.loHangs,
+  if (error || !data) {
+    return (
+      <Alert severity="error">
+        {error instanceof Error
+          ? error.message
+          : 'Không tải được dữ liệu Admin.'}
+      </Alert>
     )
-
-  const canhBaoThuHois =
-    useAdminStore(
-      (state) =>
-        state.canhBaoThuHois,
-    )
-
-  const sanPhams =
-    useAdminStore(
-      (state) =>
-        state.sanPhams,
-    )
+  }
 
   const columns:
-    DataTableColumn<LoHang>[] = [
+    DataTableColumn<AdminBatch>[] = [
       {
-        key: 'id',
+        key: 'batch',
         label: 'Mã lô',
-
-        render: (row) => (
+        render: row => (
           <Typography
             sx={{ fontWeight: 800 }}
           >
-            LH-{row.maLoHang}
+            {row.batchCode}
           </Typography>
         ),
       },
-
       {
         key: 'product',
         label: 'Sản phẩm',
-
-        render: (row) =>
-          sanPhams.find(
-            (item) =>
-              item.maSanPham ===
-              row.maSanPham,
-          )?.tenSanPham ?? '-',
+        render: row =>
+          row.productName ?? '-',
       },
-
       {
-        key: 'weight',
-        label: 'Khối lượng',
-
-        render: (row) =>
-          `${row.khoiLuong.toLocaleString(
-            'vi-VN',
-          )} kg`,
+        key: 'organization',
+        label: 'Đơn vị hiện tại',
+        minWidth: 220,
+        render: row =>
+          row.currentOrganizationName ??
+          '-',
       },
-
       {
-        key: 'date',
-        label: 'Thu hoạch',
-
-        render: (row) =>
-          row.ngayThuHoach,
+        key: 'quantity',
+        label: 'Số lượng',
+        align: 'right',
+        render: row =>
+          formatNumber(
+            row.quantity,
+          ),
       },
-
       {
-        key: 'status',
-        label: 'Trạng thái',
-
-        render: (row) => (
-          <StatusChip
-            status={
-              row.trangThai
-            }
-          />
-        ),
+        key: 'createdAt',
+        label: 'Ngày tạo',
+        render: row =>
+          formatDateTime(
+            row.createdAt,
+          ),
       },
     ]
 
   return (
-    <Box>
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 900,
-          }}
-        >
-          Tổng quan hệ thống
-        </Typography>
-
-        <Typography
-          sx={{
-            mt: 0.5,
-
-            color:
-              'text.secondary',
-          }}
-        >
-          Theo dõi dữ liệu
-          truy xuất nguồn gốc
-          nông sản từ MockData.
-        </Typography>
-      </Box>
+    <>
+      <PageHeader
+        title="Tổng quan hệ thống"
+        description="Dữ liệu thật từ SQL Server theo cấu trúc BE/docs/Database.md."
+      />
 
       <Box
         sx={{
           display: 'grid',
-
           gridTemplateColumns: {
             xs: '1fr',
-
             sm: 'repeat(2, 1fr)',
-
             xl: 'repeat(4, 1fr)',
           },
-
           gap: 2,
-
-          mb: 3,
+          mb: 4,
         }}
       >
         <StatCard
-          title="Đơn vị"
-          value={donVis.length}
-          description="Đơn vị tham gia hệ thống"
+          title="Tổ chức"
+          value={
+            data.organizationCount
+          }
+          description="Organizations"
           icon={
             <ApartmentRounded />
           }
@@ -167,10 +136,8 @@ export function AdminDashboardPage() {
 
         <StatCard
           title="Người dùng"
-          value={
-            nguoiDungs.length
-          }
-          description="Tài khoản đang quản lý"
+          value={data.userCount}
+          description="Users"
           icon={
             <PeopleAltRounded />
           }
@@ -180,25 +147,19 @@ export function AdminDashboardPage() {
 
         <StatCard
           title="Lô hàng"
-          value={loHangs.length}
-          description="Lô hàng trong chuỗi"
+          value={data.batchCount}
+          description="Batches"
           icon={
-            <LocalShippingRounded />
+            <Inventory2Rounded />
           }
           iconBg="#FFF3E0"
           iconColor="#E65100"
         />
 
         <StatCard
-          title="Cảnh báo"
-          value={
-            canhBaoThuHois.filter(
-              (item) =>
-                item.trangThai ===
-                'Active',
-            ).length
-          }
-          description="Cảnh báo chưa xử lý"
+          title="Thu hồi"
+          value={data.recallCount}
+          description="Recalls"
           icon={
             <WarningAmberRounded />
           }
@@ -207,127 +168,25 @@ export function AdminDashboardPage() {
         />
       </Box>
 
-      <Box
+      <Typography
         sx={{
-          display: 'grid',
-
-          gridTemplateColumns: {
-            xs: '1fr',
-            xl: '2fr 1fr',
-          },
-
-          gap: 2.5,
+          mb: 1.5,
+          fontSize: 19,
+          fontWeight: 900,
         }}
       >
-        <Box>
-          <Typography
-            sx={{
-              mb: 1.5,
+        Lô hàng mới nhất
+      </Typography>
 
-              fontSize: 19,
-              fontWeight: 900,
-            }}
-          >
-            Lô hàng gần đây
-          </Typography>
-
-          <DataTable
-            rows={loHangs.slice(
-              0,
-              5,
-            )}
-            columns={columns}
-            getRowId={(row) =>
-              row.maLoHang
-            }
-          />
-        </Box>
-
-        <Paper
-          elevation={0}
-          sx={{
-            p: 2.5,
-
-            border: '1px solid',
-            borderColor: 'divider',
-
-            borderRadius: 3,
-          }}
-        >
-          <Typography
-            sx={{
-              mb: 2,
-
-              fontSize: 19,
-              fontWeight: 900,
-            }}
-          >
-            Cảnh báo thu hồi
-          </Typography>
-
-          {canhBaoThuHois.map(
-            (alert) => (
-              <Box
-                key={
-                  alert.maCanhBao
-                }
-                sx={{
-                  p: 1.5,
-                  mb: 1.3,
-
-                  borderRadius: 2,
-
-                  bgcolor:
-                    '#FFF8F8',
-
-                  border:
-                    '1px solid #FFCDD2',
-                }}
-              >
-                <Box
-                  sx={{
-                    display:
-                      'flex',
-
-                    justifyContent:
-                      'space-between',
-
-                    gap: 1,
-                  }}
-                >
-                  <Typography
-                    sx={{ fontWeight: 800 }}
-                  >
-                    LH-
-                    {
-                      alert.maLoHang
-                    }
-                  </Typography>
-
-                  <StatusChip
-                    status={
-                      alert.mucDoNghiemTrong
-                    }
-                  />
-                </Box>
-
-                <Typography
-                  sx={{
-                    mt: 1,
-
-                    color:
-                      'text.secondary',
-
-                    fontSize: 13,
-                  }}
-                >
-                  {alert.lyDo}
-                </Typography>
-              </Box>
-            ),
-          )}
-        </Paper>
-      </Box>
-    </Box>
+      <DataTable
+        rows={
+          data.recentBatches
+        }
+        columns={columns}
+        getRowId={row =>
+          row.id
+        }
+      />
+    </>
   )
 }
