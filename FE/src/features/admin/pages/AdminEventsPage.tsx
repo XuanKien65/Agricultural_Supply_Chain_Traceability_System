@@ -4,181 +4,261 @@ import {
 } from 'react'
 
 import {
-  Box,
-  Tooltip,
-  Typography,
-} from '@mui/material'
+  AddRounded,
+} from '@mui/icons-material'
 
 import {
-  useAdminStore,
-} from '../admin.store'
+  Alert,
+  Button,
+  Snackbar,
+  Typography,
+} from '@mui/material'
 
 import {
   DataTable,
   type DataTableColumn,
 } from '@/components/ui/DataTable'
 
+import { PageHeader } from '@/components/ui/PageHeader'
+import { PageLoader } from '@/components/ui/PageLoader'
+import { formatDateTime } from '@/utils/format'
+
 import {
-  PageHeader,
-} from '@/components/ui/PageHeader'
+  useAdminBatches,
+  useAdminEvents,
+  useAdminOrganizations,
+  useAdminUsers,
+  useCreateAdminEvent,
+} from '../admin.queries'
 
 import type {
-  SuKien,
+  AdminEventPayload,
+  AdminSupplyChainEvent,
 } from '../admin.types'
 
+import {
+  AdminFormDialog,
+  type FormValues,
+} from '../components/AdminFormDialog'
+
 export function AdminEventsPage() {
-  const suKiens =
-    useAdminStore(
-      (state) =>
-        state.suKiens,
-    )
+  const events =
+    useAdminEvents()
 
-  const donVis =
-    useAdminStore(
-      (state) =>
-        state.donVis,
-    )
+  const batches =
+    useAdminBatches()
 
-  const nguoiDungs =
-    useAdminStore(
-      (state) =>
-        state.nguoiDungs,
-    )
+  const organizations =
+    useAdminOrganizations()
+
+  const users =
+    useAdminUsers()
+
+  const create =
+    useCreateAdminEvent()
 
   const [
     search,
     setSearch,
   ] = useState('')
 
-  const rows = useMemo(() => {
-    const q =
-      search
-        .trim()
-        .toLowerCase()
+  const [
+    open,
+    setOpen,
+  ] = useState(false)
 
-    if (!q) {
-      return suKiens
-    }
+  const [
+    message,
+    setMessage,
+  ] = useState('')
 
-    return suKiens.filter(
-      (item) =>
-        `${item.loaiSuKien} LH-${item.maLoHang} ${item.viTri} ${item.duLieuBoSung}`
+  const data =
+    events.data ?? []
+
+  const rows =
+    useMemo(() => {
+      const q =
+        search
+          .trim()
           .toLowerCase()
-          .includes(q),
+
+      if (!q)
+        return data
+
+      return data.filter(
+        item =>
+          `${item.eventType} ${
+            item.batchCode ?? ''
+          } ${
+            item.organizationName ??
+            ''
+          } ${
+            item.userName ?? ''
+          } ${
+            item.location ??
+            ''
+          }`
+            .toLowerCase()
+            .includes(q),
+      )
+    }, [
+      data,
+      search,
+    ])
+
+  if (
+    events.isLoading ||
+    batches.isLoading ||
+    organizations.isLoading ||
+    users.isLoading
+  ) {
+    return (
+      <PageLoader label="Đang tải sự kiện..." />
     )
-  }, [search, suKiens])
+  }
+
+  const error =
+    events.error ??
+    batches.error ??
+    organizations.error ??
+    users.error
+
+  if (error) {
+    return (
+      <Alert severity="error">
+        {error instanceof Error
+          ? error.message
+          : 'Không tải được sự kiện.'}
+      </Alert>
+    )
+  }
+
+  async function save(
+    values: FormValues,
+  ) {
+    const payload:
+      AdminEventPayload =
+      {
+        batchId:
+          Number(
+            values.batchId,
+          ),
+
+        eventType:
+          String(
+            values.eventType,
+          ),
+
+        organizationId:
+          Number(
+            values.organizationId,
+          ),
+
+        userId:
+          Number(
+            values.userId,
+          ),
+
+        eventData:
+          String(
+            values.eventData ||
+              '',
+          ) || null,
+
+        location:
+          String(
+            values.location ||
+              '',
+          ) || null,
+
+        previousHash:
+          String(
+            values.previousHash ||
+              '',
+          ) || null,
+
+        currentHash:
+          String(
+            values.currentHash ||
+              '',
+          ) || null,
+      }
+
+    await create.mutateAsync(
+      payload,
+    )
+
+    setMessage(
+      'Đã ghi sự kiện mới.',
+    )
+
+    setOpen(false)
+  }
 
   const columns:
-    DataTableColumn<SuKien>[] = [
+    DataTableColumn<AdminSupplyChainEvent>[] =
+    [
       {
-        key: 'event',
-
+        key: 'type',
         label: 'Sự kiện',
 
-        render: (row) => (
-          <Box>
-            <Typography
-              sx={{ fontWeight: 800 }}
-            >
-              {row.loaiSuKien}
-            </Typography>
-
-            <Typography
-              sx={{
-                color:
-                  'text.secondary',
-
-                fontSize: 12,
-              }}
-            >
-              LH-{row.maLoHang}
-            </Typography>
-          </Box>
+        render: row => (
+          <Typography
+            sx={{
+              fontWeight: 800,
+            }}
+          >
+            {row.eventType}
+          </Typography>
         ),
       },
 
       {
-        key: 'unit',
+        key: 'batch',
+        label: 'Lô hàng',
 
-        label:
-          'Đơn vị thực hiện',
+        render: row =>
+          row.batchCode ??
+          `#${row.batchId}`,
+      },
 
-        minWidth: 230,
+      {
+        key: 'org',
+        label: 'Tổ chức',
+        minWidth: 180,
 
-        render: (row) =>
-          donVis.find(
-            (item) =>
-              item.maDonVi ===
-              row.maDonViThucHien,
-          )?.tenDonVi ?? '-',
+        render: row =>
+          row.organizationName ??
+          `#${row.organizationId}`,
       },
 
       {
         key: 'user',
-
         label:
           'Người ghi nhận',
+        minWidth: 180,
 
-        render: (row) =>
-          nguoiDungs.find(
-            (item) =>
-              item.maNguoiDung ===
-              row.maNguoiThucHien,
-          )?.hoTen ?? '-',
-      },
-
-      {
-        key: 'time',
-
-        label: 'Thời gian',
-
-        render: (row) =>
-          new Date(
-            row.thoiGian,
-          ).toLocaleString(
-            'vi-VN',
-          ),
+        render: row =>
+          row.userName ??
+          `#${row.userId}`,
       },
 
       {
         key: 'location',
-
         label: 'Vị trí',
 
-        render: (row) =>
-          row.viTri,
+        render: row =>
+          row.location ?? '-',
       },
 
       {
-        key: 'hash',
+        key: 'date',
+        label: 'Thời gian',
 
-        label:
-          'Hash chain',
-
-        minWidth: 180,
-
-        render: (row) => (
-          <Tooltip
-            title={`${row.maHash}\n${row.duLieuBoSung}`}
-          >
-            <Typography
-              noWrap
-              sx={{
-                maxWidth: 180,
-
-                color:
-                  '#19713A',
-
-                fontFamily:
-                  'monospace',
-
-                fontSize: 12,
-              }}
-            >
-              {row.maHash}
-            </Typography>
-          </Tooltip>
-        ),
+        render: row =>
+          formatDateTime(
+            row.createdAt,
+          ),
       },
     ]
 
@@ -186,18 +266,177 @@ export function AdminEventsPage() {
     <>
       <PageHeader
         title="Chuỗi sự kiện"
-        description="Bảng SuKien và dữ liệu hash chain của từng lô hàng."
+        description="SupplyChainEvents chỉ thêm mới và xem lịch sử."
         search={search}
         onSearchChange={
           setSearch
+        }
+        action={
+          <Button
+            variant="contained"
+            startIcon={
+              <AddRounded />
+            }
+            onClick={() =>
+              setOpen(true)
+            }
+          >
+            Thêm sự kiện
+          </Button>
         }
       />
 
       <DataTable
         rows={rows}
         columns={columns}
-        getRowId={(row) =>
-          row.maSuKien
+        getRowId={row =>
+          row.id
+        }
+      />
+
+      <AdminFormDialog
+        open={open}
+        title="Thêm sự kiện"
+        saving={
+          create.isPending
+        }
+        initial={{
+          batchId:
+            batches
+              .data?.[0]
+              ?.id ?? '',
+
+          eventType:
+            'HARVEST',
+
+          organizationId:
+            organizations
+              .data?.[0]
+              ?.id ?? '',
+
+          userId:
+            users
+              .data?.[0]
+              ?.id ?? '',
+
+          eventData: '',
+          location: '',
+          previousHash: '',
+          currentHash: '',
+        }}
+        fields={[
+          {
+            name: 'batchId',
+            label: 'Lô hàng',
+            type: 'select',
+            required: true,
+
+            options: (
+              batches.data ??
+              []
+            ).map(item => ({
+              value: item.id,
+              label:
+                item.batchCode,
+            })),
+          },
+
+          {
+            name: 'eventType',
+            label:
+              'Loại sự kiện',
+            type: 'select',
+            required: true,
+
+            options: [
+              'HARVEST',
+              'PROCESS',
+              'PACKAGE',
+              'TRANSPORT',
+              'INSPECT',
+              'RECEIVE',
+              'SPLIT',
+              'MERGE',
+            ].map(value => ({
+              value,
+              label: value,
+            })),
+          },
+
+          {
+            name:
+              'organizationId',
+            label: 'Tổ chức',
+            type: 'select',
+            required: true,
+
+            options: (
+              organizations.data ??
+              []
+            ).map(item => ({
+              value: item.id,
+              label: item.name,
+            })),
+          },
+
+          {
+            name: 'userId',
+            label:
+              'Người thực hiện',
+            type: 'select',
+            required: true,
+
+            options: (
+              users.data ?? []
+            ).map(item => ({
+              value: item.id,
+
+              label:
+                item.fullName ??
+                item.email,
+            })),
+          },
+
+          {
+            name: 'eventData',
+            label:
+              'Dữ liệu sự kiện',
+            type: 'multiline',
+          },
+
+          {
+            name: 'location',
+            label: 'Vị trí',
+          },
+
+          {
+            name:
+              'previousHash',
+            label:
+              'Previous Hash',
+          },
+
+          {
+            name:
+              'currentHash',
+            label:
+              'Current Hash',
+          },
+        ]}
+        onClose={() =>
+          setOpen(false)
+        }
+        onSave={values =>
+          void save(values)
+        }
+      />
+
+      <Snackbar
+        open={Boolean(message)}
+        autoHideDuration={2200}
+        message={message}
+        onClose={() =>
+          setMessage('')
         }
       />
     </>

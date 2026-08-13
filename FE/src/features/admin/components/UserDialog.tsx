@@ -10,118 +10,135 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  FormControlLabel,
   InputLabel,
   MenuItem,
   Select,
+  Switch,
   TextField,
 } from '@mui/material'
 
 import type {
-  NguoiDung,
-  NguoiDungFormData,
+  AdminOrganization,
+  AdminRole,
+  AdminUser,
+  AdminUserFormData,
 } from '../admin.types'
-
-import {
-  useAdminStore,
-} from '../admin.store'
 
 interface Props {
   open: boolean
-  initial: NguoiDung | null
+  initial: AdminUser | null
+  roles: AdminRole[]
+  organizations: AdminOrganization[]
+  saving?: boolean
   onClose: () => void
-
   onSave: (
-    data: NguoiDungFormData,
+    data: AdminUserFormData,
   ) => void
 }
 
-const emptyForm:
-  NguoiDungFormData = {
-    maVaiTro: 2,
-    maDonVi: 1,
-
-    tenDangNhap: '',
-    email: '',
-    hoTen: '',
-
-    trangThai: 'Active',
-  }
+const emptyForm: AdminUserFormData = {
+  fullName: '',
+  email: '',
+  password: '',
+  role: 'FARMER',
+  organizationId: null,
+  isActive: true,
+}
 
 export function UserDialog({
   open,
   initial,
+  roles,
+  organizations,
+  saving = false,
   onClose,
   onSave,
 }: Props) {
-  const vaiTros =
-    useAdminStore(
-      (state) =>
-        state.vaiTros,
-    )
-
-  const donVis =
-    useAdminStore(
-      (state) =>
-        state.donVis,
-    )
-
   const [form, setForm] =
-    useState<NguoiDungFormData>(
+    useState<AdminUserFormData>(
       emptyForm,
     )
 
   useEffect(() => {
+    if (!open) return
+
     if (initial) {
       setForm({
-        maVaiTro:
-          initial.maVaiTro,
-
-        maDonVi:
-          initial.maDonVi,
-
-        tenDangNhap:
-          initial.tenDangNhap,
+        fullName:
+          initial.fullName ?? '',
 
         email:
           initial.email,
 
-        hoTen:
-          initial.hoTen,
+        password:
+          '',
 
-        trangThai:
-          initial.trangThai,
+        role:
+          initial.role,
+
+        organizationId:
+          initial.organizationId,
+
+        isActive:
+          initial.isActive,
       })
     } else {
-      setForm(emptyForm)
+      setForm({
+        ...emptyForm,
+
+        role:
+          roles.find(
+            role =>
+              role.name !== 'ADMIN',
+          )?.name ??
+          roles[0]?.name ??
+          'FARMER',
+
+        organizationId:
+          organizations[0]?.id ??
+          null,
+      })
     }
-  }, [initial, open])
+  }, [
+    initial,
+    open,
+    organizations,
+    roles,
+  ])
 
-  const isAdmin =
-    form.maVaiTro === 1
+  const isSystemAdmin =
+    form.role.toUpperCase() ===
+    'ADMIN'
 
-  function handleSave() {
-    if (
-      !form.hoTen.trim() ||
-      !form.tenDangNhap.trim() ||
-      !form.email.trim()
-    ) {
-      return
-    }
+  const canSave =
+    form.email.trim() !== '' &&
+    form.role.trim() !== '' &&
+    (
+      !isSystemAdmin ||
+      form.organizationId === null
+    )
 
-    onSave({
-      ...form,
-
-      maDonVi:
-        isAdmin
-          ? null
-          : form.maDonVi,
-    })
+  function update<
+    K extends keyof AdminUserFormData,
+  >(
+    key: K,
+    value: AdminUserFormData[K],
+  ) {
+    setForm(current => ({
+      ...current,
+      [key]: value,
+    }))
   }
 
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={
+        saving
+          ? undefined
+          : onClose
+      }
       fullWidth
       maxWidth="sm"
     >
@@ -138,192 +155,166 @@ export function UserDialog({
       <DialogContent
         sx={{
           pt: '12px !important',
-
-          display: 'grid',
+          display: 'flex',
+          flexDirection: 'column',
           gap: 2,
         }}
       >
         <TextField
           label="Họ tên"
-          value={form.hoTen}
-          onChange={(event) =>
-            setForm(
-              (current) => ({
-                ...current,
-
-                hoTen:
-                  event.target
-                    .value,
-              }),
+          value={form.fullName}
+          onChange={event =>
+            update(
+              'fullName',
+              event.target.value,
             )
           }
-          required
-        />
-
-        <TextField
-          label="Tên đăng nhập"
-          value={
-            form.tenDangNhap
-          }
-          onChange={(event) =>
-            setForm(
-              (current) => ({
-                ...current,
-
-                tenDangNhap:
-                  event.target
-                    .value,
-              }),
-            )
-          }
-          required
+          fullWidth
         />
 
         <TextField
           label="Email"
           type="email"
           value={form.email}
-          onChange={(event) =>
-            setForm(
-              (current) => ({
-                ...current,
-
-                email:
-                  event.target
-                    .value,
-              }),
+          onChange={event =>
+            update(
+              'email',
+              event.target.value,
             )
           }
           required
+          fullWidth
         />
 
-        <FormControl>
+        <TextField
+          label={
+            initial
+              ? 'Mật khẩu mới (để trống nếu không đổi)'
+              : 'Mật khẩu'
+          }
+          type="password"
+          value={form.password}
+          onChange={event =>
+            update(
+              'password',
+              event.target.value,
+            )
+          }
+          helperText="Nếu nhập mật khẩu, Backend sẽ hash trước khi lưu vào PasswordHash."
+          fullWidth
+        />
+
+        <FormControl
+          fullWidth
+          required
+        >
           <InputLabel>
             Vai trò
           </InputLabel>
 
           <Select
             label="Vai trò"
-            value={form.maVaiTro}
-            onChange={(event) => {
-              const maVaiTro =
-                Number(
-                  event.target
-                    .value,
-                )
+            value={form.role}
+            onChange={event => {
+              const role =
+                event.target.value
 
-              setForm(
-                (current) => ({
-                  ...current,
-
-                  maVaiTro,
-
-                  maDonVi:
-                    maVaiTro ===
-                    1
-                      ? null
-                      : (current.maDonVi ??
-                        donVis[0]
-                          ?.maDonVi ??
-                        null),
-                }),
-              )
+              setForm(current => ({
+                ...current,
+                role,
+                organizationId:
+                  role.toUpperCase() ===
+                  'ADMIN'
+                    ? null
+                    : current.organizationId,
+              }))
             }}
           >
-            {vaiTros.map(
-              (vaiTro) => (
-                <MenuItem
-                  key={
-                    vaiTro.maVaiTro
-                  }
-                  value={
-                    vaiTro.maVaiTro
-                  }
-                >
-                  {
-                    vaiTro.tenVaiTro
-                  }
-                </MenuItem>
-              ),
-            )}
+            {roles.map(role => (
+              <MenuItem
+                key={role.name}
+                value={role.name}
+              >
+                {role.name}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
 
         <FormControl
-          disabled={isAdmin}
+          fullWidth
+          disabled={isSystemAdmin}
         >
           <InputLabel>
-            Đơn vị
+            Tổ chức
           </InputLabel>
 
           <Select
-            label="Đơn vị"
+            label="Tổ chức"
             value={
-              form.maDonVi ?? ''
+              form.organizationId ??
+              ''
             }
-            onChange={(event) =>
-              setForm(
-                (current) => ({
-                  ...current,
+            onChange={event => {
+              const value =
+                event.target.value as
+                  | number
+                  | ''
 
-                  maDonVi:
-                    Number(
-                      event
-                        .target
-                        .value,
-                    ),
-                }),
+              update(
+                'organizationId',
+                value === ''
+                  ? null
+                  : Number(value),
               )
-            }
+            }}
           >
-            {donVis.map(
-              (donVi) => (
+            <MenuItem value="">
+              Không gắn tổ chức
+            </MenuItem>
+
+            {organizations.map(
+              organization => (
                 <MenuItem
                   key={
-                    donVi.maDonVi
+                    organization.id
                   }
                   value={
-                    donVi.maDonVi
+                    organization.id
                   }
                 >
-                  {donVi.tenDonVi}
+                  {organization.name}
+                  {' '}
+                  ({organization.type})
                 </MenuItem>
               ),
             )}
           </Select>
         </FormControl>
 
-        <FormControl>
-          <InputLabel>
-            Trạng thái
-          </InputLabel>
-
-          <Select
-            label="Trạng thái"
-            value={
-              form.trangThai
-            }
-            onChange={(event) =>
-              setForm(
-                (current) => ({
-                  ...current,
-
-                  trangThai:
-                    event.target
-                      .value as NguoiDung['trangThai'],
-                }),
-              )
-            }
-          >
-            <MenuItem value="Active">
-              Hoạt động
-            </MenuItem>
-
-            <MenuItem value="Inactive">
-              Ngừng hoạt động
-            </MenuItem>
-          </Select>
-        </FormControl>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={
+                form.isActive
+              }
+              onChange={(
+                _,
+                checked,
+              ) =>
+                update(
+                  'isActive',
+                  checked,
+                )
+              }
+            />
+          }
+          label={
+            form.isActive
+              ? 'Đang hoạt động'
+              : 'Đã khóa'
+          }
+        />
       </DialogContent>
 
       <DialogActions
@@ -334,23 +325,25 @@ export function UserDialog({
       >
         <Button
           onClick={onClose}
+          disabled={saving}
         >
           Hủy
         </Button>
 
         <Button
           variant="contained"
-          onClick={handleSave}
-          sx={{
-            bgcolor: '#19713A',
-
-            '&:hover': {
-              bgcolor:
-                '#145C30',
-            },
-          }}
+          disabled={
+            !canSave ||
+            saving
+          }
+          loading={saving}
+          onClick={() =>
+            onSave(form)
+          }
         >
-          Lưu
+          {initial
+            ? 'Lưu thay đổi'
+            : 'Tạo người dùng'}
         </Button>
       </DialogActions>
     </Dialog>

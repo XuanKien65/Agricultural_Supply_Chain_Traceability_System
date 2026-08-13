@@ -6,25 +6,30 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace AgriTrace.Infrastructure.Sqlserver
+namespace AgriTrace.Infrastructure.Sqlserver;
+
+public static class DependencyInjection
 {
-    public static class DependencyInjection
+    public static IServiceCollection AddInfrastructureSqlServer(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
-        public static IServiceCollection AddInfrastructureSqlServer(this IServiceCollection services, IConfiguration configuration)
-        {
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
 
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(connectionString));
+        services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseSqlServer(connectionString));
 
-            services.AddScoped<IFarmRepository, FarmRepository>();
-            services.AddScoped<IProductRepository, ProductRepository>();
-            services.AddScoped<IBatchRepository, BatchRepository>();
-            services.AddScoped<IUserRepository, UserRepository>();
-            services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddScoped<IFarmRepository, FarmRepository>();
+        services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IBatchRepository, BatchRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IJwtTokenService, JwtTokenService>();
 
-            return services;
-        }
+        // READ + USER CRUD
+        services.AddScoped<IAdminRepository, AdminRepository>();
+        // CRUD các bảng Admin còn lại
+        services.AddScoped<IAdminCrudRepository, AdminCrudRepository>();
+
+        return services;
     }
 }
-

@@ -21,8 +21,4 @@
     <ProjectReference Include="..\AgriTrace.Infrastructure.Sqlserver\AgriTrace.Infrastructure.Sqlserver.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
 </Project>

@@ -1,87 +1,75 @@
 import {
+  Alert,
   Typography,
 } from '@mui/material'
-
-import {
-  useAdminStore,
-} from '../admin.store'
 
 import {
   DataTable,
   type DataTableColumn,
 } from '@/components/ui/DataTable'
 
+import { PageHeader } from '@/components/ui/PageHeader'
+import { PageLoader } from '@/components/ui/PageLoader'
+
 import {
-  PageHeader,
-} from '@/components/ui/PageHeader'
+  useAdminRoles,
+} from '../admin.queries'
 
 import type {
-  VaiTro,
+  AdminRole,
 } from '../admin.types'
 
 export function AdminRolesPage() {
-  const vaiTros =
-    useAdminStore(
-      (state) =>
-        state.vaiTros,
-    )
+  const {
+    data = [],
+    isLoading,
+    error,
+  } = useAdminRoles()
 
-  const nguoiDungs =
-    useAdminStore(
-      (state) =>
-        state.nguoiDungs,
+  if (isLoading) {
+    return (
+      <PageLoader label="Đang tải vai trò..." />
     )
+  }
+
+  if (error) {
+    return (
+      <Alert severity="error">
+        {error instanceof Error
+          ? error.message
+          : 'Không tải được vai trò.'}
+      </Alert>
+    )
+  }
 
   const columns:
-    DataTableColumn<VaiTro>[] = [
-      {
-        key: 'id',
-
-        label:
-          'Mã vai trò',
-
-        render: (row) =>
-          `VT-${row.maVaiTro}`,
-      },
-
+    DataTableColumn<AdminRole>[] = [
       {
         key: 'name',
-
-        label:
-          'Tên vai trò',
-
-        render: (row) => (
+        label: 'Vai trò',
+        render: row => (
           <Typography
-            sx={{ fontWeight: 800 }}
+            sx={{
+              fontWeight: 800,
+            }}
           >
-            {row.tenVaiTro}
+            {row.name}
           </Typography>
         ),
       },
-
       {
         key: 'description',
-
         label: 'Mô tả',
-
-        minWidth: 300,
-
-        render: (row) =>
-          row.moTa,
+        minWidth: 320,
+        render: row =>
+          row.description,
       },
-
       {
         key: 'users',
-
-        label:
-          'Số người dùng',
-
-        render: (row) =>
-          nguoiDungs.filter(
-            (item) =>
-              item.maVaiTro ===
-              row.maVaiTro,
-          ).length,
+        label: 'Số người dùng',
+        align: 'right',
+        render: row =>
+          row.userCount,
       },
     ]
 
@@ -89,14 +77,14 @@ export function AdminRolesPage() {
     <>
       <PageHeader
         title="Quản lý vai trò"
-        description="Dữ liệu bảng VaiTro trong ERD."
+        description="Database.md lưu Role trực tiếp trong Users, không có bảng Roles riêng."
       />
 
       <DataTable
-        rows={vaiTros}
+        rows={data}
         columns={columns}
-        getRowId={(row) =>
-          row.maVaiTro
+        getRowId={row =>
+          row.name
         }
       />
     </>
