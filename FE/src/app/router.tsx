@@ -17,6 +17,7 @@ const HomePage = lazyPage(() => import('@/pages/HomePage'), 'HomePage')
 const BatchesPage = lazyPage(() => import('@/features/batches/pages/BatchesPage'), 'BatchesPage')
 const CreateBatchPage = lazyPage(() => import('@/features/batches/pages/CreateBatchPage'), 'CreateBatchPage')
 const BatchDetailPage = lazyPage(() => import('@/features/batches/pages/BatchDetailPage'), 'BatchDetailPage')
+const FarmerDashboardPage = lazyPage(() => import('@/features/dashboard/pages/FarmerDashboardPage'), 'FarmerDashboardPage')
 
 const AdminDashboardPage = lazyPage(() => import('@/features/admin/pages/AdminDashboardPage'), 'AdminDashboardPage')
 const AdminRolesPage = lazyPage(() => import('@/features/admin/pages/AdminRolesPage'), 'AdminRolesPage')
@@ -59,14 +60,20 @@ export const router = createBrowserRouter([
       },
 
       {
-        element: <MainLayout />,
+        element: <RoleRoute roles={['Farmer']} />,
         children: [
-          { index: true, element: <HomePage /> },
-          { path: 'batches', element: <BatchesPage /> },
-          { path: 'batches/new', element: <CreateBatchPage /> },
-          { path: 'batches/:batchId', element: <BatchDetailPage /> },
+          {
+            element: <MainLayout />,
+            children: [
+              { path: 'farmer', element: <FarmerDashboardPage /> },
+              { path: 'batches', element: <BatchesPage /> },
+              { path: 'batches/new', element: <CreateBatchPage /> },
+              { path: 'batches/:batchId', element: <BatchDetailPage /> },
+            ],
+          },
         ],
       },
+      { path: '/', element: <HomePage /> },
     ],
   },
 

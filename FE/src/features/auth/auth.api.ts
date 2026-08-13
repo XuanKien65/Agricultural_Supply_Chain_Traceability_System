@@ -22,9 +22,20 @@ const mockAccounts: MockAccount[] = [
       unitName: null,
     },
   },
+  {
+    password: '123456',
+    user: {
+      id: 2,
+      name: 'Trần Minh Nông',
+      email: 'farmer@gmail.com',
+      role: 'Farmer',
+      unitName: 'Nông trại Xanh Đà Lạt',
+      organizationId: 1,
+    },
+  },
 ]
 
-let nextId = 2
+let nextId = 3
 
 function findAccount(email: string) {
   return mockAccounts.find((a) => a.user.email.toLowerCase() === email.toLowerCase())
@@ -59,6 +70,7 @@ export const authApi = {
       email: payload.email,
       role: payload.role,
       unitName: payload.unitName,
+      organizationId: nextId,
     }
     mockAccounts.push({ user, password: payload.password })
     return {

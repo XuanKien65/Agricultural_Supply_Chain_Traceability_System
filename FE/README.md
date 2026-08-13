@@ -11,7 +11,10 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-Đăng nhập demo: **`admin@gmail.com` / `123456`** (role Admin) → vào **/admin**.
+Tài khoản demo:
+
+- Admin: **`admin@gmail.com` / `123456`** → `/admin`
+- Farmer: **`farmer@gmail.com` / `123456`** → `/farmer`
 
 ## Scripts
 

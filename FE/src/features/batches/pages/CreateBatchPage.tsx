@@ -1,115 +1,21 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
-import { Box, Button, Paper, TextField, Typography } from '@mui/material'
-import { useBatchesStore, type Batch } from '../batches.store'
+import { Alert, Box, Button, MenuItem, Paper, TextField, Typography } from '@mui/material'
+import { useAuthStore } from '@/features/auth/auth.store'
+import { useCreateBatch, useProducts } from '../batches.queries'
 
 export function CreateBatchPage() {
-  const { t } = useTranslation()
-  const navigate = useNavigate()
-  const createBatch = useBatchesStore((state) => state.createBatch)
-
-  const [form, setForm] = useState({
-    tenSanPham: '',
-    tenDonViSanXuat: '',
-    ngayThuHoach: '',
-    khoiLuong: '',
-    maQR: '',
-  })
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
-    const newBatch: Batch = {
-      maLoHang: `B-${Math.floor(1000 + Math.random() * 9000)}`,
-      maSanPham: Date.now(),
-      maDonViSanXuat: Date.now() + 1,
-      maQR: form.maQR || `QR-${Math.floor(1000 + Math.random() * 9000)}`,
-      ngayThuHoach: form.ngayThuHoach,
-      khoiLuong: Number(form.khoiLuong) || 0,
-      trangThai: 'Created',
-      tenSanPham: form.tenSanPham,
-      tenDonViSanXuat: form.tenDonViSanXuat,
-      viTri: 'Pending validation',
-      events: [
-        {
-          maSuKien: `e-${Date.now()}`,
-          loaiSuKien: 'Harvest',
-          thoiGian: `${form.ngayThuHoach} 06:00`,
-          maDonViThucHien: 'D-NEW',
-          ghiChu: 'Batch created by farmer.',
-        },
-      ],
-    }
-
-    createBatch(newBatch)
-    navigate('/batches')
-  }
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <Box>
-        <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'primary.main', textTransform: 'uppercase' }}>
-          {t('batches.createTitle')}
-        </Typography>
-        <Typography variant="h4" sx={{ fontWeight: 900 }}>
-          {t('batches.createTitle')}
-        </Typography>
-        <Typography sx={{ mt: 0.5, color: 'text.secondary', fontSize: 14 }}>{t('batches.createSubtitle')}</Typography>
-      </Box>
-
-      <Paper sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
-        <Box
-          component="form"
-          onSubmit={handleSubmit}
-          sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}
-        >
-          <TextField
-            label={t('batches.product')}
-            placeholder={t('batches.productNamePlaceholder')}
-            value={form.tenSanPham}
-            onChange={(e) => setForm({ ...form, tenSanPham: e.target.value })}
-            required
-          />
-          <TextField
-            label={t('batches.producerUnit')}
-            placeholder={t('batches.producerUnitPlaceholder')}
-            value={form.tenDonViSanXuat}
-            onChange={(e) => setForm({ ...form, tenDonViSanXuat: e.target.value })}
-            required
-          />
-          <TextField
-            label={t('batches.harvestDate')}
-            type="date"
-            value={form.ngayThuHoach}
-            onChange={(e) => setForm({ ...form, ngayThuHoach: e.target.value })}
-            required
-            slotProps={{ inputLabel: { shrink: true } }}
-          />
-          <TextField
-            label={t('batches.quantity')}
-            type="number"
-            value={form.khoiLuong}
-            onChange={(e) => setForm({ ...form, khoiLuong: e.target.value })}
-            required
-          />
-          <TextField
-            label={t('batches.qrCode')}
-            placeholder={t('batches.qrPlaceholder')}
-            value={form.maQR}
-            onChange={(e) => setForm({ ...form, maQR: e.target.value })}
-          />
-
-          <Box sx={{ gridColumn: { md: 'span 2' }, display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
-            <Button type="button" variant="outlined" onClick={() => navigate('/batches')}>
-              {t('batches.cancel')}
-            </Button>
-            <Button type="submit" variant="contained">
-              {t('batches.save')}
-            </Button>
-          </Box>
-        </Box>
-      </Paper>
-    </Box>
-  )
+  const navigate=useNavigate(); const user=useAuthStore(s=>s.user); const {data:products=[]}=useProducts(); const create=useCreateBatch()
+  const [form,setForm]=useState({productId:'',harvestDate:new Date().toISOString().slice(0,10),weight:'',location:'',harvestNotes:''})
+  async function submit(e:FormEvent){e.preventDefault();const batch=await create.mutateAsync({productId:Number(form.productId),producerOrganizationId:user?.organizationId??1,performedByUserId:user?.id??1,harvestDate:form.harvestDate,weight:Number(form.weight),location:form.location,harvestNotes:form.harvestNotes});navigate(`/batches/${batch.batchId}`)}
+  return <Box sx={{maxWidth:900,mx:'auto'}}><Typography color="primary" sx={{fontWeight:800}}>GHI NHẬN THU HOẠCH</Typography><Typography variant="h4" sx={{fontWeight:900}}>Tạo lô hàng mới</Typography><Typography color="text.secondary" sx={{mb:3}}>Hệ thống sẽ tự sinh mã lô, QR và sự kiện HARVEST đầu tiên.</Typography>
+    <Paper component="form" onSubmit={submit} sx={{p:3,border:'1px solid',borderColor:'divider',borderRadius:3,display:'grid',gridTemplateColumns:{xs:'1fr',md:'1fr 1fr'},gap:2}}>
+      <TextField select required label="Sản phẩm" value={form.productId} onChange={e=>setForm({...form,productId:e.target.value})}>{products.map(x=><MenuItem key={x.productId} value={x.productId}>{x.name} ({x.unit})</MenuItem>)}</TextField>
+      <TextField required type="number" label="Khối lượng" value={form.weight} onChange={e=>setForm({...form,weight:e.target.value})} slotProps={{htmlInput:{min:0.01,step:0.01}}}/>
+      <TextField required type="date" label="Ngày thu hoạch" value={form.harvestDate} onChange={e=>setForm({...form,harvestDate:e.target.value})} slotProps={{inputLabel:{shrink:true}}}/>
+      <TextField label="Địa điểm thu hoạch" value={form.location} onChange={e=>setForm({...form,location:e.target.value})}/>
+      <TextField multiline minRows={4} label="Ghi chú thu hoạch" value={form.harvestNotes} onChange={e=>setForm({...form,harvestNotes:e.target.value})} sx={{gridColumn:{md:'span 2'}}}/>
+      {create.isError&&<Alert severity="error" sx={{gridColumn:{md:'span 2'}}}>{create.error.message}</Alert>}
+      <Box sx={{gridColumn:{md:'span 2'},display:'flex',justifyContent:'flex-end',gap:1}}><Button onClick={()=>navigate('/batches')}>Hủy</Button><Button type="submit" variant="contained" disabled={create.isPending}>{create.isPending?'Đang tạo…':'Tạo lô và cấp QR'}</Button></Box>
+    </Paper></Box>
 }

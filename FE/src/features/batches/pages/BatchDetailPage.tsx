@@ -1,118 +1,13 @@
-import { useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
-import { Box, Button, Paper, Typography } from '@mui/material'
-import { useBatchesStore } from '../batches.store'
+import { Alert, Box, Button, Chip, Paper, Typography } from '@mui/material'
+import { ContentCopyRounded, QrCode2Rounded } from '@mui/icons-material'
+import { StatusChip } from '@/components/ui/StatusChip'
+import { useAuthStore } from '@/features/auth/auth.store'
+import { useFarmerBatch } from '../batches.queries'
 
-export function BatchDetailPage() {
-  const { t } = useTranslation()
-  const { batchId } = useParams()
-  const batches = useBatchesStore((state) => state.batches)
-  const selectedBatchId = useBatchesStore((state) => state.selectedBatchId)
-  const setSelectedBatchId = useBatchesStore((state) => state.setSelectedBatchId)
-  const updateBatchStatus = useBatchesStore((state) => state.updateBatchStatus)
-
-  const batch = useMemo(() => {
-    const currentId = batchId ?? selectedBatchId ?? ''
-    return batches.find((item) => item.maLoHang === currentId) ?? null
-  }, [batchId, batches, selectedBatchId])
-
-  if (!batch) {
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Typography color="text.secondary">{t('batches.notFound')}</Typography>
-        <Button component={Link} to="/batches" variant="outlined" sx={{ alignSelf: 'flex-start' }}>
-          {t('batches.back')}
-        </Button>
-      </Box>
-    )
-  }
-
-  const fields: [string, string][] = [
-    [t('batches.batchId'), batch.maLoHang],
-    [t('batches.status'), batch.trangThai],
-    [t('batches.product'), batch.tenSanPham],
-    [t('batches.producerUnit'), batch.tenDonViSanXuat],
-    [t('batches.harvestDate'), batch.ngayThuHoach],
-    [t('batches.quantity'), `${batch.khoiLuong} kg`],
-    [t('batches.qrCode'), batch.maQR],
-    [t('batches.location'), batch.viTri ?? '—'],
-  ]
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', gap: 2 }}>
-        <Box>
-          <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'primary.main', textTransform: 'uppercase' }}>
-            {t('batches.detailTitle')}
-          </Typography>
-          <Typography variant="h4" sx={{ fontWeight: 900 }}>
-            {batch.tenSanPham}
-          </Typography>
-          <Typography sx={{ mt: 0.5, color: 'text.secondary', fontSize: 14 }}>{t('batches.detailSubtitle')}</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1.5 }}>
-          <Button component={Link} to="/batches" variant="outlined">
-            {t('batches.back')}
-          </Button>
-          <Button
-            variant="contained"
-            onClick={() => {
-              setSelectedBatchId(batch.maLoHang)
-              const nextStatus =
-                batch.trangThai === 'Created'
-                  ? 'InTransit'
-                  : batch.trangThai === 'InTransit'
-                    ? 'Processed'
-                    : 'Distributed'
-              updateBatchStatus(batch.maLoHang, nextStatus)
-            }}
-          >
-            {t('batches.advanceStatus')}
-          </Button>
-        </Box>
-      </Box>
-
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1.3fr 0.7fr' }, gap: 2 }}>
-        <Paper sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
-          <Typography sx={{ fontWeight: 800 }}>{t('batches.batchInfo')}</Typography>
-          <Box sx={{ mt: 2, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-            {fields.map(([label, value]) => (
-              <Box key={label}>
-                <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{label}</Typography>
-                <Typography sx={{ fontWeight: 600 }}>{value}</Typography>
-              </Box>
-            ))}
-          </Box>
-        </Paper>
-
-        <Paper sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
-          <Typography sx={{ fontWeight: 800 }}>{t('batches.quickNotes')}</Typography>
-          <Box component="ul" sx={{ mt: 2, pl: 2.5, display: 'flex', flexDirection: 'column', gap: 1.5, fontSize: 14, color: 'text.secondary' }}>
-            <li>{t('batches.note1')}</li>
-            <li>{t('batches.note2')}</li>
-            <li>{t('batches.note3')}</li>
-          </Box>
-        </Paper>
-      </Box>
-
-      <Paper sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
-        <Typography sx={{ fontWeight: 800 }}>{t('batches.eventHistory')}</Typography>
-        <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {batch.events.map((event) => (
-            <Box key={event.maSuKien} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', gap: 1 }}>
-                <Typography sx={{ fontWeight: 700 }}>{event.loaiSuKien}</Typography>
-                <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{event.thoiGian}</Typography>
-              </Box>
-              <Typography sx={{ mt: 1, fontSize: 14, color: 'text.secondary' }}>
-                {t('batches.actorUnit')}: {event.maDonViThucHien}
-              </Typography>
-              <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>{event.ghiChu}</Typography>
-            </Box>
-          ))}
-        </Box>
-      </Paper>
-    </Box>
-  )
-}
+export function BatchDetailPage(){const {batchId}=useParams();const orgId=useAuthStore(s=>s.user?.organizationId)??1;const {data:b,isLoading}=useFarmerBatch(Number(batchId),orgId)
+  if(isLoading)return <Typography>Đang tải…</Typography>;if(!b)return <Alert severity="warning">Không tìm thấy lô hàng. <Button component={Link} to="/batches">Quay lại</Button></Alert>
+  return <Box sx={{display:'flex',flexDirection:'column',gap:3}}><Box sx={{display:'flex',justifyContent:'space-between',gap:2,flexWrap:'wrap'}}><Box><Typography color="primary" sx={{fontWeight:800}}>CHI TIẾT LÔ HÀNG</Typography><Typography variant="h4" sx={{fontWeight:900}}>{b.batchCode}</Typography><Typography color="text.secondary">{b.productName} • {b.producerOrganizationName}</Typography></Box><Box><Button component={Link} to="/batches">Quay lại danh sách</Button></Box></Box>
+  <Box sx={{display:'grid',gridTemplateColumns:{xs:'1fr',lg:'2fr 1fr'},gap:2}}><Paper sx={{p:3,border:'1px solid',borderColor:'divider',borderRadius:3}}><Typography variant="h6" sx={{fontWeight:800,mb:2}}>Thông tin sản xuất</Typography><Box sx={{display:'grid',gridTemplateColumns:{xs:'1fr',sm:'1fr 1fr'},gap:2}}>{[['Sản phẩm',b.productName],['Khối lượng',`${b.weight} ${b.unit}`],['Ngày thu hoạch',new Date(b.harvestDate).toLocaleDateString('vi-VN')],['Trạng thái',b.status],['Nông trại',b.producerOrganizationName],['Ngày tạo',new Date(b.createdAt).toLocaleString('vi-VN')]].map(([k,v])=><Box key={k}><Typography variant="caption" color="text.secondary">{k}</Typography>{k==='Trạng thái'?<Box><StatusChip status={v}/></Box>:<Typography sx={{fontWeight:700}}>{v}</Typography>}</Box>)}</Box></Paper>
+  <Paper sx={{p:3,border:'1px solid',borderColor:'divider',borderRadius:3,textAlign:'center'}}><QrCode2Rounded sx={{fontSize:110,color:'primary.main'}}/><Typography sx={{fontWeight:800}}>Mã truy xuất</Typography><Typography variant="body2" color="text.secondary" sx={{wordBreak:'break-all'}}>{b.qrCode}</Typography><Button size="small" startIcon={<ContentCopyRounded/>} onClick={()=>void navigator.clipboard.writeText(`${location.origin}${b.qrCode}`)} sx={{mt:1}}>Sao chép liên kết</Button></Paper></Box>
+  <Paper sx={{p:3,border:'1px solid',borderColor:'divider',borderRadius:3}}><Typography variant="h6" sx={{fontWeight:800}}>Lịch sử bất biến</Typography><Typography variant="body2" color="text.secondary" sx={{mb:2}}>Các sự kiện chỉ được thêm mới, không thể sửa hoặc xóa.</Typography>{b.events.map(e=><Box key={e.eventId} sx={{borderLeft:'3px solid',borderColor:'primary.main',pl:2,py:1,mb:2}}><Box sx={{display:'flex',gap:1,alignItems:'center'}}><Chip label="THU HOẠCH" color="success" size="small"/><Typography variant="body2">{new Date(e.eventTime).toLocaleString('vi-VN')}</Typography></Box><Typography sx={{mt:1}}>{e.location||'Không có địa điểm'}</Typography>{e.additionalData&&<Typography variant="body2" color="text.secondary">{e.additionalData}</Typography>}<Typography variant="caption" color="text.secondary" sx={{display:'block',wordBreak:'break-all'}}>Hash: {e.currentHash}</Typography></Box>)}</Paper></Box>}

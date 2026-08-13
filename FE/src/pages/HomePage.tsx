@@ -20,7 +20,7 @@ export function HomePage() {
         <Typography sx={{ fontWeight: 700 }}>
           {user ? `${user.name} • ${user.role}` : t('auth.signInToContinue')}
         </Typography>
-        <Button component={Link} to={user?.role === 'Admin' ? '/admin' : '/batches'} variant="contained" sx={{ mt: 2 }}>
+        <Button component={Link} to={user?.role === 'Admin' ? '/admin' : user?.role === 'Farmer' ? '/farmer' : '/'} variant="contained" sx={{ mt: 2 }}>
           {t('nav.batches')} →
         </Button>
       </Paper>
