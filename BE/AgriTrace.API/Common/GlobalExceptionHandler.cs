@@ -7,6 +7,7 @@ using AgriTrace.Application.Common.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 
 namespace AgriTrace.API.Common
 {
@@ -17,31 +18,61 @@ namespace AgriTrace.API.Common
     public class GlobalExceptionHandler : IExceptionHandler
     {
         private readonly ILogger<GlobalExceptionHandler> _logger;
+        private readonly IHostEnvironment _environment;
 
-        public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
+        public GlobalExceptionHandler(
+            ILogger<GlobalExceptionHandler> logger,
+            IHostEnvironment environment)
         {
             _logger = logger;
+            _environment = environment;
         }
 
-        public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
+        public async ValueTask<bool> TryHandleAsync(
+            HttpContext httpContext,
+            Exception exception,
+            CancellationToken cancellationToken)
         {
             var (statusCode, messages) = exception switch
             {
-                NotFoundException => (HttpStatusCode.NotFound, new[] { exception.Message }),
+                NotFoundException => (
+                    HttpStatusCode.NotFound,
+                    new[] { exception.Message }),
+
                 // Domain ném ArgumentException khi dữ liệu đầu vào không hợp lệ.
-                ArgumentException => (HttpStatusCode.BadRequest, new[] { exception.Message }),
-                _ => (HttpStatusCode.InternalServerError, new[] { "An unexpected error occurred." })
+                ArgumentException => (
+                    HttpStatusCode.BadRequest,
+                    new[] { exception.Message }),
+
+                _ => (
+                    HttpStatusCode.InternalServerError,
+                    new[]
+                    {
+                        _environment.IsDevelopment()
+                            ? exception.Message
+                            : "An unexpected error occurred."
+                    })
             };
 
             if (statusCode == HttpStatusCode.InternalServerError)
             {
                 // Chỉ log chi tiết cho lỗi ngoài dự kiến; không rò rỉ thông tin ra client.
-                _logger.LogError(exception, "Unhandled exception while processing {Path}", httpContext.Request.Path);
+                _logger.LogError(
+                    exception,
+                    "Unhandled exception while processing {Path}",
+                    httpContext.Request.Path);
             }
 
-            var response = ApiResponse.Fail(statusCode, messages);
-            httpContext.Response.StatusCode = (int)statusCode;
-            await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
+            var response = ApiResponse.Fail(
+                statusCode,
+                messages);
+
+            httpContext.Response.StatusCode =
+                (int)statusCode;
+
+            await httpContext.Response.WriteAsJsonAsync(
+                response,
+                cancellationToken);
 
             return true;
         }

@@ -1,144 +1,183 @@
-import type { Role } from '@/features/auth/auth.types'
-
-export interface VaiTro {
-  maVaiTro: number
-  tenVaiTro: Role
-  moTa: string
+export interface ApiEnvelope<T> {
+  statusCode: number
+  isSuccess: boolean
+  errorMessages: string[]
+  result: T
 }
 
-export interface DonVi {
-  maDonVi: number
-  tenDonVi: string
-  loaiDonVi: Exclude<Role, 'Admin'>
-  diaChi: string
-  soDienThoai: string
-  maSoThue: string
-  trangThai: 'Active' | 'Inactive'
+export interface AdminRole {
+  name: string
+  description: string
+  userCount: number
 }
 
-export interface NguoiDung {
-  maNguoiDung: number
-  maVaiTro: number
-  maDonVi: number | null
-  tenDangNhap: string
+export interface AdminOrganization {
+  id: number
+  name: string
+  type: string
+  status: string
+  createdAt: string | null
+}
+
+export interface AdminUser {
+  id: number
+  fullName: string | null
   email: string
-  hoTen: string
-  ngayTao: string
-  trangThai: 'Active' | 'Inactive'
+  role: string
+  organizationId: number | null
+  organizationName: string | null
+  isActive: boolean
+  createdAt: string | null
 }
 
-export interface SanPham {
-  maSanPham: number
-  tenSanPham: string
-  donViTinh: string
-  moTa: string
+export interface AdminProduct {
+  id: number
+  name: string | null
+  category: string | null
+  unit: string | null
+  organizationId: number
+  organizationName: string | null
 }
 
-export interface LoHang {
-  maLoHang: number
-  maSanPham: number
-  maDonViSanXuat: number
-  maLoHangCha: number | null
-  maQR: string
-  ngayThuHoach: string
-  khoiLuong: number
-
-  trangThai:
-    | 'Created'
-    | 'InTransit'
-    | 'Processed'
-    | 'Distributed'
-    | 'Recalled'
-
-  ngayTao: string
+export interface AdminBatch {
+  id: number
+  productId: number
+  productName: string | null
+  batchCode: string
+  quantity: number
+  currentOrganizationId: number | null
+  currentOrganizationName: string | null
+  parentBatchId: number | null
+  rootBatchId: number | null
+  qrCode: string | null
+  createdAt: string | null
 }
 
-export interface SuKien {
-  maSuKien: number
-  maLoHang: number
-  maDonViThucHien: number
-  maNguoiThucHien: number
-  maSuKienTruoc: number | null
-
-  loaiSuKien:
-    | 'Harvest'
-    | 'Process'
-    | 'Package'
-    | 'Transport'
-    | 'Retail'
-
-  thoiGian: string
-  viTri: string
-  duLieuBoSung: string
-  maHash: string
-  maHashTruoc: string | null
+export interface AdminSupplyChainEvent {
+  id: number
+  batchId: number
+  batchCode: string | null
+  eventType: string
+  organizationId: number
+  organizationName: string | null
+  userId: number
+  userName: string | null
+  eventData: string | null
+  location: string | null
+  previousHash: string | null
+  currentHash: string | null
+  createdAt: string | null
 }
 
-export interface KiemDinh {
-  maKiemDinh: number
-  maLoHang: number
-  maDonViKiemDinh: number
-  ketQua: 'Passed' | 'Failed'
-  ngayKiemDinh: string
-  ghiChu: string
+export interface AdminInspection {
+  id: number
+  batchId: number
+  batchCode: string | null
+  inspectorId: number
+  inspectorName: string | null
+  result: string | null
+  notes: string | null
+  createdAt: string | null
 }
 
-export interface ChungNhan {
-  maChungNhan: number
-  maLoHang: number
-  maKiemDinh: number | null
-
-  loaiChungNhan:
-    | 'VietGAP'
-    | 'GlobalGAP'
-    | 'Organic'
-    | 'HACCP'
-
-  fileChungNhanUrl: string
-  donViCap: string
-  ngayCap: string
-  ngayHetHan: string
+export interface AdminCertificate {
+  id: number
+  batchId: number
+  batchCode: string | null
+  inspectionId: number | null
+  certificateType: string | null
+  fileUrl: string | null
+  issuedAt: string | null
 }
 
-export interface CanhBaoThuHoi {
-  maCanhBao: number
-  maLoHang: number
-  maNguoiTao: number
-  lyDo: string
-
-  mucDoNghiemTrong:
-    | 'Low'
-    | 'Medium'
-    | 'High'
-    | 'Critical'
-
-  thoiGianTao: string
-
-  trangThai:
-    | 'Active'
-    | 'Resolved'
-    | 'Cancelled'
+export interface AdminRecall {
+  id: number
+  batchId: number
+  batchCode: string | null
+  reason: string | null
+  severity: string | null
+  createdBy: number
+  createdByName: string | null
+  createdAt: string | null
 }
 
-export interface ThongBaoThuHoi {
-  maThongBao: number
-  maCanhBao: number
-  maDonVi: number
-  thoiGianGui: string
-
-  trangThaiXacNhan:
-    | 'Pending'
-    | 'Acknowledged'
-    | 'Processed'
-
-  ghiChuXuLy: string
+export interface AdminDashboard {
+  organizationCount: number
+  userCount: number
+  batchCount: number
+  recallCount: number
+  recentBatches: AdminBatch[]
 }
 
-export interface NguoiDungFormData {
-  maVaiTro: number
-  maDonVi: number | null
-  tenDangNhap: string
+export interface AdminUserFormData {
+  fullName: string
   email: string
-  hoTen: string
-  trangThai: NguoiDung['trangThai']
+  password: string
+  role: string
+  organizationId: number | null
+  isActive: boolean
+}
+
+export interface AdminUserPayload {
+  fullName: string | null
+  email: string
+  password?: string
+  role: string
+  organizationId: number | null
+  isActive: boolean
+}
+
+export interface AdminOrganizationPayload {
+  name: string
+  type: string
+  status: string
+}
+
+export interface AdminProductPayload {
+  name: string | null
+  category: string | null
+  unit: string | null
+  organizationId: number
+}
+
+export interface AdminBatchPayload {
+  productId: number
+  batchCode: string
+  quantity: number
+  currentOrganizationId: number | null
+  parentBatchId: number | null
+  rootBatchId: number | null
+  qrCode: string | null
+}
+
+export interface AdminEventPayload {
+  batchId: number
+  eventType: string
+  organizationId: number
+  userId: number
+  eventData: string | null
+  location: string | null
+  previousHash: string | null
+  currentHash: string | null
+}
+
+export interface AdminInspectionPayload {
+  batchId: number
+  inspectorId: number
+  result: string | null
+  notes: string | null
+}
+
+export interface AdminCertificatePayload {
+  batchId: number
+  inspectionId: number | null
+  certificateType: string | null
+  fileUrl: string | null
+}
+
+export interface AdminRecallPayload {
+  batchId: number
+  reason: string | null
+  severity: string | null
+  createdBy: number
 }

@@ -10,15 +10,14 @@ import {
 } from '@mui/icons-material'
 
 import {
+  Alert,
   Box,
   Button,
   IconButton,
+  Snackbar,
+  Tooltip,
   Typography,
 } from '@mui/material'
-
-import {
-  useAdminStore,
-} from '../admin.store'
 
 import {
   DataTable,
@@ -30,54 +29,54 @@ import {
 } from '@/components/ui/PageHeader'
 
 import {
+  PageLoader,
+} from '@/components/ui/PageLoader'
+
+import {
   StatusChip,
 } from '@/components/ui/StatusChip'
+
+import {
+  formatDate,
+} from '@/utils/format'
+
+import {
+  useAdminOrganizations,
+  useAdminRoles,
+  useAdminUsers,
+  useCreateAdminUser,
+  useDeactivateAdminUser,
+  useUpdateAdminUser,
+} from '../admin.queries'
+
+import type {
+  AdminUser,
+  AdminUserFormData,
+  AdminUserPayload,
+} from '../admin.types'
 
 import {
   UserDialog,
 } from '../components/UserDialog'
 
-import type {
-  NguoiDung,
-  NguoiDungFormData,
-} from '../admin.types'
-
 export function AdminUsersPage() {
-  const nguoiDungs =
-    useAdminStore(
-      (state) =>
-        state.nguoiDungs,
-    )
+  const usersQuery =
+    useAdminUsers()
 
-  const vaiTros =
-    useAdminStore(
-      (state) =>
-        state.vaiTros,
-    )
+  const rolesQuery =
+    useAdminRoles()
 
-  const donVis =
-    useAdminStore(
-      (state) =>
-        state.donVis,
-    )
+  const organizationsQuery =
+    useAdminOrganizations()
 
-  const addNguoiDung =
-    useAdminStore(
-      (state) =>
-        state.addNguoiDung,
-    )
+  const createUser =
+    useCreateAdminUser()
 
-  const updateNguoiDung =
-    useAdminStore(
-      (state) =>
-        state.updateNguoiDung,
-    )
+  const updateUser =
+    useUpdateAdminUser()
 
-  const deleteNguoiDung =
-    useAdminStore(
-      (state) =>
-        state.deleteNguoiDung,
-    )
+  const deactivateUser =
+    useDeactivateAdminUser()
 
   const [
     search,
@@ -93,137 +92,258 @@ export function AdminUsersPage() {
     editing,
     setEditing,
   ] =
-    useState<NguoiDung | null>(
+    useState<AdminUser | null>(
       null,
     )
 
-  const rows = useMemo(() => {
-    const q =
-      search
-        .trim()
-        .toLowerCase()
+  const [
+    message,
+    setMessage,
+  ] = useState('')
 
-    if (!q) {
-      return nguoiDungs
-    }
+  const [
+    actionError,
+    setActionError,
+  ] = useState('')
 
-    return nguoiDungs.filter(
-      (item) =>
-        `${item.hoTen} ${item.tenDangNhap} ${item.email}`
+  const users =
+    usersQuery.data ?? []
+
+  const roles =
+    rolesQuery.data ?? []
+
+  const organizations =
+    organizationsQuery.data ?? []
+
+  const rows =
+    useMemo(() => {
+      const q =
+        search
+          .trim()
           .toLowerCase()
-          .includes(q),
-    )
-  }, [nguoiDungs, search])
 
-  function save(
-    data: NguoiDungFormData,
-  ) {
-    if (editing) {
-      updateNguoiDung(
-        editing.maNguoiDung,
-        data,
+      if (!q)
+        return users
+
+      return users.filter(
+        item =>
+          `${
+            item.fullName ?? ''
+          } ${
+            item.email
+          } ${
+            item.role
+          } ${
+            item.organizationName ??
+            ''
+          }`
+            .toLowerCase()
+            .includes(q),
       )
-    } else {
-      addNguoiDung(data)
+    }, [
+      search,
+      users,
+    ])
+
+  if (
+    usersQuery.isLoading ||
+    rolesQuery.isLoading ||
+    organizationsQuery.isLoading
+  ) {
+    return (
+      <PageLoader
+        label="Đang tải người dùng..."
+      />
+    )
+  }
+
+  const queryError =
+    usersQuery.error ??
+    rolesQuery.error ??
+    organizationsQuery.error
+
+  if (queryError) {
+    return (
+      <Alert severity="error">
+        {queryError
+          instanceof Error
+          ? queryError.message
+          : 'Không tải được dữ liệu người dùng.'}
+      </Alert>
+    )
+  }
+
+  function toPayload(
+    data: AdminUserFormData,
+  ): AdminUserPayload {
+    return {
+      fullName:
+        data.fullName.trim() ||
+        null,
+
+      email:
+        data.email.trim(),
+
+      ...(data.password.trim()
+        ? {
+            password:
+              data.password,
+          }
+        : {}),
+
+      role:
+        data.role,
+
+      organizationId:
+        data.role
+          .toUpperCase() ===
+        'ADMIN'
+          ? null
+          : data.organizationId,
+
+      isActive:
+        data.isActive,
+    }
+  }
+
+  async function save(
+    data: AdminUserFormData,
+  ) {
+    try {
+      setActionError('')
+
+      if (editing) {
+        await updateUser.mutateAsync({
+          id: editing.id,
+          payload:
+            toPayload(data),
+        })
+
+        setMessage(
+          'Đã cập nhật người dùng trong database.',
+        )
+      } else {
+        await createUser.mutateAsync(
+          toPayload(data),
+        )
+
+        setMessage(
+          'Đã tạo người dùng trong database.',
+        )
+      }
+
+      setDialogOpen(false)
+      setEditing(null)
+    } catch (error) {
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : 'Không lưu được người dùng.',
+      )
+    }
+  }
+
+  async function deactivate(
+    row: AdminUser,
+  ) {
+    if (
+      !window.confirm(
+        `Vô hiệu hóa người dùng ${
+          row.fullName ??
+          row.email
+        }?`,
+      )
+    ) {
+      return
     }
 
-    setDialogOpen(false)
+    try {
+      setActionError('')
 
-    setEditing(null)
+      await deactivateUser
+        .mutateAsync(row.id)
+
+      setMessage(
+        'Đã vô hiệu hóa người dùng.',
+      )
+    } catch (error) {
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : 'Không thể vô hiệu hóa người dùng.',
+      )
+    }
   }
 
   const columns:
-    DataTableColumn<NguoiDung>[] = [
+    DataTableColumn<AdminUser>[] =
+    [
       {
         key: 'user',
-
         label: 'Người dùng',
+        minWidth: 220,
 
-        minWidth: 200,
-
-        render: (row) => (
+        render: row => (
           <Box>
             <Typography
-              sx={{ fontWeight: 800 }}
+              sx={{
+                fontWeight: 800,
+              }}
             >
-              {row.hoTen}
+              {row.fullName ||
+                'Chưa có họ tên'}
             </Typography>
 
             <Typography
               sx={{
                 color:
                   'text.secondary',
-
                 fontSize: 12,
               }}
             >
-              @{row.tenDangNhap}
+              {row.email}
             </Typography>
           </Box>
         ),
       },
 
       {
-        key: 'email',
-
-        label: 'Email',
-
-        minWidth: 200,
-
-        render: (row) =>
-          row.email,
-      },
-
-      {
         key: 'role',
-
         label: 'Vai trò',
-
-        render: (row) =>
-          vaiTros.find(
-            (item) =>
-              item.maVaiTro ===
-              row.maVaiTro,
-          )?.tenVaiTro ?? '-',
+        render: row =>
+          row.role,
       },
 
       {
-        key: 'unit',
-
-        label: 'Đơn vị',
-
+        key: 'organization',
+        label: 'Tổ chức',
         minWidth: 230,
 
-        render: (row) =>
-          row.maDonVi
-            ? (donVis.find(
-                (item) =>
-                  item.maDonVi ===
-                  row.maDonVi,
-              )?.tenDonVi ??
-              '-')
-            : 'Ban quản trị',
+        render: row =>
+          row.organizationName ??
+          'Hệ thống',
       },
 
       {
-        key: 'date',
-
+        key: 'createdAt',
         label: 'Ngày tạo',
 
-        render: (row) =>
-          row.ngayTao,
+        render: row =>
+          formatDate(
+            row.createdAt,
+          ),
       },
 
       {
         key: 'status',
+        label: 'Trạng thái',
 
-        label:
-          'Trạng thái',
-
-        render: (row) => (
+        render: row => (
           <StatusChip
             status={
-              row.trangThai
+              row.isActive
+                ? 'ACTIVE'
+                : 'INACTIVE'
             }
           />
         ),
@@ -231,47 +351,55 @@ export function AdminUsersPage() {
 
       {
         key: 'actions',
-
         label: 'Thao tác',
-
         align: 'right',
 
-        render: (row) => (
-          <Box>
-            <IconButton
-              size="small"
-              onClick={() => {
-                setEditing(row)
-
-                setDialogOpen(
-                  true,
-                )
-              }}
-            >
-              <EditRounded fontSize="small" />
-            </IconButton>
-
-            <IconButton
-              size="small"
-              color="error"
-              disabled={
-                row.maNguoiDung ===
-                1
-              }
-              onClick={() => {
-                if (
-                  window.confirm(
-                    `Xóa người dùng ${row.hoTen}?`,
+        render: row => (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent:
+                'flex-end',
+            }}
+          >
+            <Tooltip title="Sửa">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setEditing(row)
+                  setDialogOpen(
+                    true,
                   )
-                ) {
-                  deleteNguoiDung(
-                    row.maNguoiDung,
-                  )
-                }
-              }}
-            >
-              <DeleteOutlineRounded fontSize="small" />
-            </IconButton>
+                }}
+              >
+                <EditRounded
+                  fontSize="small"
+                />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Vô hiệu hóa">
+              <span>
+                <IconButton
+                  size="small"
+                  color="error"
+                  disabled={
+                    !row.isActive ||
+                    deactivateUser
+                      .isPending
+                  }
+                  onClick={() =>
+                    void deactivate(
+                      row,
+                    )
+                  }
+                >
+                  <DeleteOutlineRounded
+                    fontSize="small"
+                  />
+                </IconButton>
+              </span>
+            </Tooltip>
           </Box>
         ),
       },
@@ -281,7 +409,7 @@ export function AdminUsersPage() {
     <>
       <PageHeader
         title="Quản lý người dùng"
-        description="Quản lý NguoiDung, vai trò và đơn vị trực thuộc. Dữ liệu đang lưu trong Zustand MockData."
+        description="CRUD Users thật qua API; tạo/sửa sẽ lưu SQL Server nên F5 không mất dữ liệu."
         search={search}
         onSearchChange={
           setSearch
@@ -294,19 +422,7 @@ export function AdminUsersPage() {
             }
             onClick={() => {
               setEditing(null)
-
-              setDialogOpen(
-                true,
-              )
-            }}
-            sx={{
-              bgcolor:
-                '#19713A',
-
-              '&:hover': {
-                bgcolor:
-                  '#145C30',
-              },
+              setDialogOpen(true)
             }}
           >
             Thêm người dùng
@@ -314,21 +430,59 @@ export function AdminUsersPage() {
         }
       />
 
+      {actionError && (
+        <Alert
+          severity="error"
+          sx={{
+            mb: 2,
+          }}
+          onClose={() =>
+            setActionError('')
+          }
+        >
+          {actionError}
+        </Alert>
+      )}
+
       <DataTable
         rows={rows}
         columns={columns}
-        getRowId={(row) =>
-          row.maNguoiDung
+        getRowId={row =>
+          row.id
         }
       />
 
       <UserDialog
         open={dialogOpen}
         initial={editing}
-        onClose={() =>
-          setDialogOpen(false)
+        roles={roles}
+        organizations={
+          organizations
         }
-        onSave={save}
+        saving={
+          createUser.isPending ||
+          updateUser.isPending
+        }
+        onClose={() => {
+          setDialogOpen(false)
+          setEditing(null)
+        }}
+        onSave={data =>
+          void save(data)
+        }
+      />
+
+      <Snackbar
+        open={Boolean(
+          message,
+        )}
+        autoHideDuration={
+          2500
+        }
+        message={message}
+        onClose={() =>
+          setMessage('')
+        }
       />
     </>
   )
