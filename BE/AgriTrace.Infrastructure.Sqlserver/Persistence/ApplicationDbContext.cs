@@ -15,6 +15,8 @@ namespace AgriTrace.Infrastructure.Sqlserver.Persistence
         public DbSet<ProductDataModel> Products => Set<ProductDataModel>();
         public DbSet<BatchDataModel> Batches => Set<BatchDataModel>();
         public DbSet<SupplyChainEventDataModel> SupplyChainEvents => Set<SupplyChainEventDataModel>();
+        public DbSet<UserDataModel> Users => Set<UserDataModel>();
+        public DbSet<RoleDataModel> Roles => Set<RoleDataModel>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

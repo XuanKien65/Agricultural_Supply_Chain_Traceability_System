@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Box, Button, IconButton, InputAdornment, Paper, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, IconButton, InputAdornment, Paper, TextField, Typography } from '@mui/material'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
 import { useAuthStore } from './auth.store'
 
@@ -15,8 +15,8 @@ export function LoginPage() {
   const location = useLocation()
   const { login, status, error } = useAuthStore()
 
-  const [email, setEmail] = useState('admin@gmail.com')
-  const [password, setPassword] = useState('123456')
+  const [username, setUsername] = useState('superadmin')
+  const [password, setPassword] = useState('Admin@123456')
   const [showPassword, setShowPassword] = useState(false)
 
   const redirectTo = (location.state as LocationState)?.from?.pathname ?? '/'
@@ -24,7 +24,7 @@ export function LoginPage() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     try {
-      await login({ email, password })
+      await login({ username, password })
       navigate(redirectTo, { replace: true })
     } catch {
       /* error surfaced via store */
@@ -43,10 +43,10 @@ export function LoginPage() {
 
         <Box component="form" onSubmit={onSubmit} sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField
-            label={t('auth.email')}
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            label={t('auth.usernameOrEmail', 'Tên đăng nhập hoặc Email')}
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             required
             fullWidth
           />
@@ -75,9 +75,9 @@ export function LoginPage() {
           />
 
           {error && (
-            <Typography color="error" sx={{ fontSize: 14 }}>
-              {t('auth.invalidCredentials')}
-            </Typography>
+            <Alert severity="error" variant="filled" sx={{ borderRadius: 2, fontSize: 13 }}>
+              {error}
+            </Alert>
           )}
 
           <Button type="submit" variant="contained" loading={status === 'loading'} fullWidth>
@@ -85,7 +85,7 @@ export function LoginPage() {
           </Button>
 
           <Typography sx={{ textAlign: 'center', fontSize: 12, color: 'text.disabled' }}>
-            admin@gmail.com / 123456
+            superadmin / Admin@123456 (Admin) | admin@agritrace.vn / Password@123
           </Typography>
 
           <Typography sx={{ textAlign: 'center', fontSize: 14, color: 'text.secondary' }}>

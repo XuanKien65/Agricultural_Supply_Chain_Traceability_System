@@ -5,13 +5,24 @@ using AgriTrace.Infrastructure.Sqlserver;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddPresentation();
+builder.Services.AddPresentation(builder.Configuration);   // <- truyền Configuration vào để đọc JwtSettings
 builder.Services.AddApplication();
 builder.Services.AddInfrastructureSqlServer(builder.Configuration);
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-builder.Services.AddSwaggerGen();
+// OpenAPI / Swagger với JWT Bearer support
+builder.Services.AddSwaggerWithJwt();
+
+// Cấu hình CORS cho phép Frontend kết nối
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 
 var app = builder.Build();
 
@@ -21,13 +32,14 @@ app.UseExceptionHandler();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");
 
+// QUAN TRỌNG: Authentication phải đứng TRƯỚC Authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
+  Alert,
   Box,
   Button,
   IconButton,
@@ -39,41 +40,49 @@ export function RegisterPage() {
 
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [role, setRole] = useState<RegisterableRole>('Farmer')
-  const [unitName, setUnitName] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
 
   const confirmMismatch = confirmPassword.length > 0 && password !== confirmPassword
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!fullName.trim() || !email.trim() || !password || !confirmPassword || !unitName.trim()) {
-      setFormError(t('auth.required'))
+    if (!fullName.trim() || !email.trim() || !password || !confirmPassword) {
+      setFormError(t('auth.required', 'Vui lòng điền đầy đủ thông tin'))
       return
     }
     if (!EMAIL_PATTERN.test(email)) {
-      setFormError(t('auth.emailInvalid'))
+      setFormError(t('auth.emailInvalid', 'Email không hợp lệ'))
+      return
+    }
+    if (password.length < 6) {
+      setFormError('Mật khẩu phải có ít nhất 6 ký tự')
       return
     }
     if (password !== confirmPassword) {
-      setFormError(t('auth.passwordMismatch'))
+      setFormError(t('auth.passwordMismatch', 'Mật khẩu xác nhận không khớp'))
       return
     }
     setFormError(null)
     try {
-      await register({ fullName, email, password, role, unitName })
+      await register({
+        fullName,
+        email,
+        username: username.trim() || email.trim(),
+        password,
+        role,
+      })
       navigate('/', { replace: true })
     } catch {
       /* error surfaced via store */
     }
   }
 
-  const errorMessage =
-    formError ??
-    (error === 'emailTaken' ? t('auth.emailTaken') : error && t('auth.invalidCredentials'))
+  const errorMessage = formError ?? error
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', p: 2 }}>
@@ -101,6 +110,13 @@ export function RegisterPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            fullWidth
+          />
+          <TextField
+            label={t('auth.username', 'Tên tài khoản (Tùy chọn, mặc định lấy email)')}
+            placeholder="Ví dụ: farmer123"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             fullWidth
           />
 
@@ -150,26 +166,17 @@ export function RegisterPage() {
                     sx={{ flexDirection: 'column', gap: 0.5, py: 1, fontSize: 11 }}
                   >
                     <Icon fontSize="small" />
-                    {t(`auth.roles.${r}`)}
+                    {t(`auth.roles.${r}`, r)}
                   </Button>
                 )
               })}
             </Box>
           </Box>
 
-          <TextField
-            label={t('auth.unitName')}
-            placeholder={t('auth.unitNamePlaceholder')}
-            value={unitName}
-            onChange={(e) => setUnitName(e.target.value)}
-            required
-            fullWidth
-          />
-
           {errorMessage && (
-            <Typography color="error" sx={{ fontSize: 14 }}>
+            <Alert severity="error" variant="filled" sx={{ borderRadius: 2, fontSize: 13 }}>
               {errorMessage}
-            </Typography>
+            </Alert>
           )}
 
           <Button type="submit" variant="contained" loading={status === 'loading'} fullWidth>

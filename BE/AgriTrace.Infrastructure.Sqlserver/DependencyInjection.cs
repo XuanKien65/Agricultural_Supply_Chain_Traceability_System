@@ -1,6 +1,7 @@
 using AgriTrace.Domain.Interfaces;
 using AgriTrace.Infrastructure.Sqlserver.Persistence;
 using AgriTrace.Infrastructure.Sqlserver.Repositories;
+using AgriTrace.Infrastructure.Sqlserver.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,8 +20,11 @@ namespace AgriTrace.Infrastructure.Sqlserver
             services.AddScoped<IFarmRepository, FarmRepository>();
             services.AddScoped<IProductRepository, ProductRepository>();
             services.AddScoped<IBatchRepository, BatchRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IJwtTokenService, JwtTokenService>();
 
             return services;
         }
     }
 }
+

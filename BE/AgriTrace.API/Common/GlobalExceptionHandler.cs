@@ -28,8 +28,10 @@ namespace AgriTrace.API.Common
             var (statusCode, messages) = exception switch
             {
                 NotFoundException => (HttpStatusCode.NotFound, new[] { exception.Message }),
+                UnauthorizedAccessException => (HttpStatusCode.Unauthorized, new[] { exception.Message }),
                 // Domain ném ArgumentException khi dữ liệu đầu vào không hợp lệ.
                 ArgumentException => (HttpStatusCode.BadRequest, new[] { exception.Message }),
+                InvalidOperationException => (HttpStatusCode.BadRequest, new[] { exception.Message }),
                 _ => (HttpStatusCode.InternalServerError, new[] { "An unexpected error occurred." })
             };
 

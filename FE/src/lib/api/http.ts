@@ -8,7 +8,8 @@ import { tokenStorage } from './token-storage'
 
 /** Shape our backend uses for error payloads. Adapt to your API. */
 export interface ApiErrorBody {
-  message: string
+  message?: string
+  errorMessages?: string[]
   code?: string
   errors?: Record<string, string[]>
 }
@@ -23,7 +24,18 @@ export class ApiError extends Error {
   readonly fieldErrors?: Record<string, string[]>
 
   constructor(status: number, body?: ApiErrorBody) {
-    super(body?.message ?? `Request failed with status ${status}`)
+    const extractedMessage =
+      body?.errorMessages?.[0] ??
+      body?.message ??
+      (status === 401
+        ? 'Tên đăng nhập hoặc mật khẩu không chính xác.'
+        : status === 403
+        ? 'Bạn không có quyền thực hiện thao tác này.'
+        : status === 400
+        ? 'Thông tin nhập vào không hợp lệ.'
+        : `Lỗi hệ thống (${status})`)
+
+    super(extractedMessage)
     this.name = 'ApiError'
     this.status = status
     this.code = body?.code
@@ -45,8 +57,6 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 })
 
 // --- Response interceptor: normalize errors + handle 401 --------------------
-// A single in-flight refresh promise prevents a thundering herd of refreshes
-// when several requests 401 at the same time.
 let refreshing: Promise<void> | null = null
 
 async function refreshSession(): Promise<void> {
@@ -80,7 +90,6 @@ http.interceptors.response.use(
         return http(original)
       } catch {
         tokenStorage.clear()
-        // Let the app react (e.g. redirect to /login).
         window.dispatchEvent(new CustomEvent('auth:logout'))
       }
     }
