@@ -1,82 +1,100 @@
-import type { AuthUser, LoginPayload, LoginResponse, RegisterPayload } from './auth.types'
-
-/**
- * Mock auth backend — no BE yet. Swap for real calls once the API is ready:
- *   login:    http.post<LoginResponse>('/auth/login', p).then((r) => r.data)
- *   register: http.post<LoginResponse>('/auth/register', p).then((r) => r.data)
- */
-
-interface MockAccount {
-  user: AuthUser
-  password: string
-}
-
-const mockAccounts: MockAccount[] = [
-  {
-    password: '123456',
-    user: {
-      id: 1,
-      name: 'Nguyễn Văn A',
-      email: 'admin@gmail.com',
-      role: 'Admin',
-      unitName: null,
-    },
-  },
-  {
-    password: '123456',
-    user: {
-      id: 2,
-      name: 'Trần Minh Nông',
-      email: 'farmer@gmail.com',
-      role: 'Farmer',
-      unitName: 'Nông trại Xanh Đà Lạt',
-      organizationId: 1,
-    },
-  },
-]
-
-let nextId = 3
-
-function findAccount(email: string) {
-  return mockAccounts.find((a) => a.user.email.toLowerCase() === email.toLowerCase())
-}
+import { http } from '@/lib/api/http'
+import {
+  ROLE_TO_ID,
+  type ApiResponse,
+  type AuthUser,
+  type BackendCurrentUserResult,
+  type BackendLoginResult,
+  type BackendRegisterResult,
+  type LoginPayload,
+  type LoginResponse,
+  type RegisterPayload,
+} from './auth.types'
 
 export const authApi = {
+  /**
+   * Đăng nhập với backend API: POST /api/auth/login
+   */
   async login(payload: LoginPayload): Promise<LoginResponse> {
-    await new Promise((r) => setTimeout(r, 500))
-    const account = findAccount(payload.email)
-    if (!account || account.password !== payload.password) {
-      const err = new Error('invalidCredentials')
-      err.name = 'InvalidCredentials'
-      throw err
+    const res = await http.post<ApiResponse<BackendLoginResult>>('/auth/login', {
+      username: payload.username,
+      password: payload.password,
+    })
+
+    const data = res.data
+    if (!data.isSuccess || !data.result) {
+      const msg = data.errorMessages?.[0] || 'Đăng nhập thất bại'
+      throw new Error(msg)
     }
+
+    const { token, userId, username, fullName, email, role, organizationId } = data.result
+
+    const user: AuthUser = {
+      id: userId,
+      username,
+      fullName,
+      name: fullName || username,
+      email,
+      role,
+      unitName: null,
+      organizationId,
+    }
+
     return {
-      accessToken: 'mock-access-token',
-      refreshToken: 'mock-refresh-token',
-      user: account.user,
+      accessToken: token,
+      user,
     }
   },
 
+  /**
+   * Đăng ký với backend API: POST /api/auth/register
+   */
   async register(payload: RegisterPayload): Promise<LoginResponse> {
-    await new Promise((r) => setTimeout(r, 500))
-    if (findAccount(payload.email)) {
-      const err = new Error('emailTaken')
-      err.name = 'EmailTaken'
-      throw err
-    }
-    const user: AuthUser = {
-      id: nextId++,
-      name: payload.fullName,
+    const roleId = ROLE_TO_ID[payload.role] ?? 2
+
+    const res = await http.post<ApiResponse<BackendRegisterResult>>('/auth/register', {
+      username: payload.username || payload.email,
       email: payload.email,
-      role: payload.role,
-      unitName: payload.unitName,
-      organizationId: nextId,
+      password: payload.password,
+      fullName: payload.fullName,
+      roleId,
+      organizationId: payload.organizationId ?? null,
+    })
+
+    const data = res.data
+    if (!data.isSuccess || !data.result) {
+      const msg = data.errorMessages?.[0] || 'Đăng ký thất bại'
+      throw new Error(msg)
     }
-    mockAccounts.push({ user, password: payload.password })
+
+    // Tự động đăng nhập ngay sau khi đăng ký thành công
+    return this.login({
+      username: payload.username || payload.email,
+      password: payload.password,
+    })
+  },
+
+  /**
+   * Lấy thông tin user hiện tại từ token: GET /api/auth/me
+   */
+  async getMe(): Promise<AuthUser> {
+    const res = await http.get<ApiResponse<BackendCurrentUserResult>>('/auth/me')
+    const data = res.data
+    if (!data.isSuccess || !data.result) {
+      throw new Error('Không thể lấy thông tin người dùng')
+    }
+
+    const { userId, username, fullName, email, role, organizationId } = data.result
+
     return {
-      accessToken: 'mock-access-token',
-      refreshToken: 'mock-refresh-token',
-      user,
+      id: userId,
+      username,
+      fullName,
+      name: fullName || username,
+      email,
+      role,
+      unitName: null,
+      organizationId,
     }
   },
 }

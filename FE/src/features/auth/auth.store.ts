@@ -11,6 +11,7 @@ interface AuthState {
   isAuthenticated: boolean
   login: (payload: LoginPayload) => Promise<void>
   register: (payload: RegisterPayload) => Promise<void>
+  fetchMe: () => Promise<void>
   logout: () => void
 }
 
@@ -26,10 +27,10 @@ export const useAuthStore = create<AuthState>()(
         set({ status: 'loading', error: null })
         try {
           const res = await authApi.login(payload)
-          tokenStorage.set(res.accessToken, res.refreshToken)
+          tokenStorage.set(res.accessToken)
           set({ user: res.user, isAuthenticated: true, status: 'idle' })
         } catch (e) {
-          const message = e instanceof Error ? e.message : 'error'
+          const message = e instanceof Error ? e.message : 'Tài khoản hoặc mật khẩu không chính xác'
           set({ status: 'error', error: message })
           throw e
         }
@@ -39,12 +40,27 @@ export const useAuthStore = create<AuthState>()(
         set({ status: 'loading', error: null })
         try {
           const res = await authApi.register(payload)
-          tokenStorage.set(res.accessToken, res.refreshToken)
+          tokenStorage.set(res.accessToken)
           set({ user: res.user, isAuthenticated: true, status: 'idle' })
         } catch (e) {
-          const message = e instanceof Error ? e.message : 'error'
+          const message = e instanceof Error ? e.message : 'Đăng ký không thành công'
           set({ status: 'error', error: message })
           throw e
+        }
+      },
+
+      async fetchMe() {
+        const token = tokenStorage.getAccess()
+        if (!token) {
+          set({ user: null, isAuthenticated: false })
+          return
+        }
+        try {
+          const user = await authApi.getMe()
+          set({ user, isAuthenticated: true })
+        } catch {
+          tokenStorage.clear()
+          set({ user: null, isAuthenticated: false })
         }
       },
 
@@ -55,11 +71,12 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth',
-      // Only persist identity; tokens live in tokenStorage.
       partialize: (s) => ({ user: s.user, isAuthenticated: s.isAuthenticated }),
     },
   ),
 )
 
-// Keep the store in sync when the HTTP layer forces a logout (refresh failed).
-window.addEventListener('auth:logout', () => useAuthStore.getState().logout())
+// Keep the store in sync when HTTP layer forces a logout
+if (typeof window !== 'undefined') {
+  window.addEventListener('auth:logout', () => useAuthStore.getState().logout())
+}

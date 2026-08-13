@@ -4,19 +4,17 @@ using AgriTrace.Infrastructure.Sqlserver;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Controller + Exception + CORS
-builder.Services.AddPresentation();
+// Presentation layer (Controller + Exception + CORS + JWT)
+builder.Services.AddPresentation(builder.Configuration);
 
-// Application
+// Application layer
 builder.Services.AddApplication();
 
-// SQL Server
-builder.Services.AddInfrastructureSqlServer(
-    builder.Configuration);
+// Infrastructure SQL Server layer
+builder.Services.AddInfrastructureSqlServer(builder.Configuration);
 
-// Swagger
-builder.Services.AddOpenApi();
-builder.Services.AddSwaggerGen();
+// OpenAPI / Swagger với JWT Bearer support
+builder.Services.AddSwaggerWithJwt();
 
 var app = builder.Build();
 
@@ -24,20 +22,14 @@ app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-
     app.UseSwagger();
-
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// CORS phải nằm trước Authentication, Authorization và MapControllers.
+app.UseCors(AgriTrace.API.DependencyInjection.FrontendCorsPolicy);
 
-// QUAN TRỌNG:
-// CORS phải nằm trước Authorization và MapControllers.
-app.UseCors(
-    AgriTrace.API.DependencyInjection.FrontendCorsPolicy);
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
