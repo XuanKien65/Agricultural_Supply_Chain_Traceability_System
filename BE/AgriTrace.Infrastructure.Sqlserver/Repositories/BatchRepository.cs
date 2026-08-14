@@ -43,7 +43,10 @@ public sealed class BatchRepository(ApplicationDbContext db) : IBatchRepository
         var row = new SupplyChainEventDataModel { BatchId = batch.Id, OrganizationId = e.OrganizationId,
             PerformedByUserId = e.PerformedByUserId, PreviousEventId = e.PreviousEventId, EventType = e.EventType,
             EventTime = e.EventTime, Location = e.Location, AdditionalData = e.AdditionalData, Hash = e.Hash, PreviousHash = e.PreviousHash };
-        db.SupplyChainEvents.Add(row); await db.SaveChangesAsync(ct);
+        db.SupplyChainEvents.Add(row);
+        var batchRow = await db.Batches.FindAsync([batch.Id], ct) ?? throw new InvalidOperationException("Batch not found.");
+        batchRow.Status = batch.Status;
+        await db.SaveChangesAsync(ct);
         return new(row.Id, row.BatchId, row.OrganizationId, row.PerformedByUserId, row.PreviousEventId, row.EventType,
             row.EventTime, row.Location, row.AdditionalData, row.PreviousHash, row.Hash);
     }

@@ -22,4 +22,7 @@ public interface IUserRepository
 
     /// <summary>Danh sách user có phân trang (dành cho Admin).</summary>
     Task<PagedResult<User>> GetAllPagedAsync(string? search, string? roleFilter, int page, int pageSize, CancellationToken ct = default);
+
+    /// <summary>Trả về OrganizationId của người dùng, hoặc null nếu không tồn tại / không thuộc đơn vị nào.</summary>
+    Task<int?> GetOrganizationIdAsync(int userId, CancellationToken ct = default);
 }

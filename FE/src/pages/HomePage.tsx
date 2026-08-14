@@ -3,6 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { Box, Button, Paper, Typography } from '@mui/material'
 import { useAuthStore } from '@/features/auth/auth.store'
 
+const ROLE_HOME: Record<string, string> = {
+  Admin: '/admin',
+  Farmer: '/farmer',
+  Processor: '/events',
+  Distributor: '/events',
+  Retailer: '/events',
+}
+
 export function HomePage() {
   const { t } = useTranslation()
   const user = useAuthStore((state) => state.user)
@@ -20,7 +28,7 @@ export function HomePage() {
         <Typography sx={{ fontWeight: 700 }}>
           {user ? `${user.name} • ${user.role}` : t('auth.signInToContinue')}
         </Typography>
-        <Button component={Link} to={user?.role === 'Admin' ? '/admin' : user?.role === 'Farmer' ? '/farmer' : '/'} variant="contained" sx={{ mt: 2 }}>
+        <Button component={Link} to={user ? (ROLE_HOME[user.role] ?? '/') : '/login'} variant="contained" sx={{ mt: 2 }}>
           {t('nav.batches')} →
         </Button>
       </Paper>

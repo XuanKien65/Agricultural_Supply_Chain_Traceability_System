@@ -5,6 +5,8 @@ namespace AgriTrace.Domain.Entities;
 
 public sealed class SupplyChainEvent
 {
+    public static readonly string[] Order = ["HARVEST", "PROCESS", "PACKAGE", "TRANSPORT", "DISTRIBUTE", "RETAIL"];
+
     public int Id { get; private set; }
     public int BatchId { get; private set; }
     public int OrganizationId { get; private set; }
@@ -22,7 +24,7 @@ public sealed class SupplyChainEvent
         string eventType, DateTime eventTime, string? location, string? additionalData,
         string? previousHash, string? hash = null, string? digitalSignature = null)
     {
-        if (eventType != "HARVEST") throw new InvalidOperationException("A Farmer may only record HARVEST events.");
+        if (Array.IndexOf(Order, eventType) < 0) throw new ArgumentException($"Unknown event type '{eventType}'.", nameof(eventType));
         Id = id; BatchId = batchId; OrganizationId = organizationId; PerformedByUserId = userId;
         PreviousEventId = previousEventId; EventType = eventType; EventTime = eventTime;
         Location = location?.Trim(); AdditionalData = additionalData; PreviousHash = previousHash;

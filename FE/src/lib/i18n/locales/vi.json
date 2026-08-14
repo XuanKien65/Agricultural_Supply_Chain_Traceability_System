@@ -6,6 +6,7 @@
   "nav": {
     "home": "Trang chủ",
     "batches": "Lô hàng",
+    "events": "Sự kiện chuỗi cung ứng",
     "logout": "Đăng xuất"
   },
   "auth": {
