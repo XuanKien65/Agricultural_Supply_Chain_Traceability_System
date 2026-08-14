@@ -18,6 +18,7 @@ const BatchesPage = lazyPage(() => import('@/features/batches/pages/BatchesPage'
 const CreateBatchPage = lazyPage(() => import('@/features/batches/pages/CreateBatchPage'), 'CreateBatchPage')
 const BatchDetailPage = lazyPage(() => import('@/features/batches/pages/BatchDetailPage'), 'BatchDetailPage')
 const FarmerDashboardPage = lazyPage(() => import('@/features/dashboard/pages/FarmerDashboardPage'), 'FarmerDashboardPage')
+const RecordEventPage = lazyPage(() => import('@/features/events/pages/RecordEventPage'), 'RecordEventPage')
 
 const AdminDashboardPage = lazyPage(() => import('@/features/admin/pages/AdminDashboardPage'), 'AdminDashboardPage')
 const AdminRolesPage = lazyPage(() => import('@/features/admin/pages/AdminRolesPage'), 'AdminRolesPage')
@@ -73,6 +74,19 @@ export const router = createBrowserRouter([
           },
         ],
       },
+      {
+        element: <RoleRoute roles={['Processor', 'Distributor', 'Retailer']} />,
+        children: [
+          {
+            element: <MainLayout />,
+            children: [
+              { path: 'events', element: <RecordEventPage /> },
+              { path: 'events/:batchId', element: <RecordEventPage /> },
+            ],
+          },
+        ],
+      },
+
       { path: '/', element: <HomePage /> },
     ],
   },

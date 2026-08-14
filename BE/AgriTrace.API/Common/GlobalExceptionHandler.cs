@@ -4,8 +4,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using AgriTrace.API.Models;
 using AgriTrace.Application.Common.Exceptions;
+using AgriTrace.Domain.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
 
@@ -37,9 +40,15 @@ namespace AgriTrace.API.Common
             {
                 NotFoundException => (HttpStatusCode.NotFound, new[] { exception.Message }),
                 UnauthorizedAccessException => (HttpStatusCode.Unauthorized, new[] { exception.Message }),
+                ForbiddenException => (HttpStatusCode.Forbidden, new[] { exception.Message }),
+                // Ghi sự kiện sai thứ tự chain of custody (VD: Retail trước Transport) — AC-05.
+                InvalidEventSequenceException => (HttpStatusCode.Conflict, new[] { exception.Message }),
                 // Domain ném ArgumentException khi dữ liệu đầu vào không hợp lệ.
                 ArgumentException => (HttpStatusCode.BadRequest, new[] { exception.Message }),
                 InvalidOperationException => (HttpStatusCode.BadRequest, new[] { exception.Message }),
+                // Vi phạm khóa ngoại (VD: organizationId/userId không tồn tại) — trả 400 thay vì 500 chung chung.
+                DbUpdateException { InnerException: SqlException { Number: 547 } } =>
+                    (HttpStatusCode.BadRequest, new[] { "Dữ liệu tham chiếu không hợp lệ: tổ chức hoặc người thực hiện không tồn tại." }),
                 _ => (
                     HttpStatusCode.InternalServerError,
                     new[]

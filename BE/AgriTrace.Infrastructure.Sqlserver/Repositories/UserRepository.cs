@@ -86,6 +86,14 @@ public sealed class UserRepository(ApplicationDbContext db) : IUserRepository
         return new PagedResult<User>(rows.Select(Map).ToList().AsReadOnly(), total);
     }
 
+    public async Task<int?> GetOrganizationIdAsync(int userId, CancellationToken ct = default)
+    {
+        return await db.Users.AsNoTracking()
+            .Where(x => x.Id == userId)
+            .Select(x => x.OrganizationId)
+            .FirstOrDefaultAsync(ct);
+    }
+
     private static User Map(UserDataModel x) =>
         new(x.Id, x.RoleId, x.OrganizationId, x.Username, x.PasswordHash,
             x.Email, x.FullName, x.CreatedAt, x.Status, x.Role?.Name);
