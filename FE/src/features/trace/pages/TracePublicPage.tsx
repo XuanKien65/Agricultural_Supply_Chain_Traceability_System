@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { MapPin, Calendar, AlertTriangle, QrCode, ShieldCheck } from 'lucide-react'
+import { MapPin, Calendar, AlertTriangle, QrCode, ShieldCheck, Home } from 'lucide-react'
 import { http } from '@/lib/api/http'
 import { EVENT_TYPE_LABELS, type EventType } from '@/features/events/events.types'
 
@@ -99,7 +100,13 @@ export function TracePublicPage() {
             <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
             <h2 className="text-xl font-bold mb-2">Không tìm thấy sản phẩm</h2>
             <p className="text-gray-600">Mã lô hàng #{batchId} không tồn tại hoặc chưa có dữ liệu công khai.</p>
-            <p className="text-sm text-gray-500 mt-4">Vui lòng kiểm tra lại mã QR hoặc liên hệ nhà cung cấp.</p>
+            <p className="text-sm text-gray-500 mt-4 mb-6">Vui lòng kiểm tra lại mã QR hoặc liên hệ nhà cung cấp.</p>
+            <Button asChild className="gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold">
+              <Link to="/">
+                <Home className="w-4 h-4" />
+                <span>Về trang chủ</span>
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -122,7 +129,7 @@ export function TracePublicPage() {
                   <Badge className="bg-green-200 text-green-900 border-none">Mã lô #{batch.id}</Badge>
                   {hashChainValid && (
                     <Badge className="bg-blue-200 text-blue-900 border-none flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3" /> Hash Chain Hợp lệ
+                      <ShieldCheck className="w-3 h-3" /> Dữ liệu đã xác thực
                     </Badge>
                   )}
                 </div>

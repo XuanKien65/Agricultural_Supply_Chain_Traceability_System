@@ -14,45 +14,44 @@ import {
   Sparkles,
   LogIn,
   LayoutDashboard,
-  X,
-  Camera,
 } from 'lucide-react'
 import { useAuthStore } from '@/features/auth/auth.store'
 import { ROLE_DEFAULT_ROUTES, ROLE_LABELS } from '@/features/auth/auth.types'
+import { QrScannerDialog } from '@/features/batches/components/QrScannerDialog'
 
-// Dữ liệu các lô hàng mẫu để người dùng thử nghiệm nhanh
+// Lô hàng mẫu để người dùng thử nghiệm nhanh — dùng ID lô có thật trong hệ thống
 const SAMPLE_BATCHES = [
   {
-    id: 'B001',
-    product: 'Dâu tây tươi Đà Lạt',
-    category: 'Trái cây cao cấp',
-    farm: 'Nông trại ABC, Đà Lạt, Lâm Đồng',
-    harvestDate: '15/01/2026',
-    certifications: ['VietGAP', 'Organic'],
-    status: 'Đã phân phối tới siêu thị',
-    icon: '🍓',
+    id: '1',
+    product: 'Cà chua bi Cherry',
+    category: 'Rau củ quả',
+    farm: 'Nông trại Hữu cơ Sơn La',
+    harvestDate: '01/07/2026',
+    certifications: ['VietGAP'],
+    status: 'Đã sơ chế và kiểm định chất lượng',
+    icon: '🍅',
     badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
   },
   {
-    id: 'B002',
-    product: 'Cà chua bi Organic',
-    category: 'Rau củ quả',
-    farm: 'Trang trại Nông nghiệp Xanh, Đơn Dương',
-    harvestDate: '18/01/2026',
-    certifications: ['GlobalGAP', 'Organic'],
-    status: 'Đang vận chuyển lạnh',
-    icon: '🍅',
-    badgeColor: 'bg-green-100 text-green-800 border-green-300',
+    id: '4',
+    product: 'Dâu tây giống Hana Mộc Châu',
+    category: 'Trái cây tươi',
+    farm: 'Nông trại Hữu cơ Sơn La',
+    harvestDate: '05/07/2026',
+    certifications: ['GlobalGAP'],
+    status: 'Đã kiểm định chất lượng',
+    icon: '🍓',
+    badgeColor: 'bg-rose-100 text-rose-800 border-rose-300',
   },
   {
-    id: 'B003',
-    product: 'Dưa lưới ruột cam Nhật Bản',
-    category: 'Trái cây nhà kính',
-    farm: 'Khu Nông nghiệp Công nghệ cao Củ Chi',
-    harvestDate: '20/01/2026',
-    certifications: ['VietGAP', 'ISO 22000'],
-    status: 'Đã kiểm định chất lượng',
-    icon: '🍈',
+    id: '3',
+    product: 'Cà chua bi Cherry (lô tách)',
+    category: 'Rau củ quả',
+    farm: 'Tổng kho Logistics Miền Bắc',
+    harvestDate: '03/07/2026',
+    certifications: [],
+    status: 'Đang trong diện cảnh báo thu hồi',
+    icon: '⚠️',
     badgeColor: 'bg-amber-100 text-amber-800 border-amber-300',
   },
 ]
@@ -69,7 +68,7 @@ export function HomePage() {
     e.preventDefault()
     const trimmed = batchIdInput.trim()
     if (!trimmed) {
-      setErrorMsg('Vui lòng nhập mã lô hàng (Ví dụ: B001, B002)')
+      setErrorMsg('Vui lòng nhập mã lô hàng (Ví dụ: 1, 4)')
       return
     }
     setErrorMsg('')
@@ -137,7 +136,7 @@ export function HomePage() {
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-semibold transition shadow-sm shadow-emerald-700/20"
               >
                 <LogIn className="w-4 h-4" />
-                <span>Đăng nhập Cán bộ</span>
+                <span>Đăng nhập</span>
               </Link>
             )}
           </div>
@@ -179,7 +178,7 @@ export function HomePage() {
                     setBatchIdInput(e.target.value)
                     if (errorMsg) setErrorMsg('')
                   }}
-                  placeholder="Nhập mã lô hàng (Ví dụ: B001, B002, B003)..."
+                  placeholder="Nhập mã lô hàng (Ví dụ: 1, 4)..."
                   className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition"
                 />
               </div>
@@ -215,7 +214,7 @@ export function HomePage() {
             <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between text-xs text-slate-500 gap-2">
               <span className="font-medium">Thử tra cứu nhanh mã mẫu:</span>
               <div className="flex flex-wrap gap-1.5">
-                {['B001', 'B002', 'B003'].map((code) => (
+                {['1', '4', '3'].map((code) => (
                   <button
                     key={code}
                     type="button"
@@ -383,30 +382,30 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* 5. CÔNG NGHỆ BẢO VỆ DỮ LIỆU (HASH CHAIN / BLOCKCHAIN-LITE) */}
+      {/* 5. CAM KẾT DỮ LIỆU KHÔNG THỂ LÀM GIẢ */}
       <section id="tech" className="py-16 bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800 mb-4">
                 <Lock className="w-3.5 h-3.5" />
-                <span>Toàn vẹn dữ liệu &bull; Append-Only</span>
+                <span>Cam kết Minh bạch</span>
               </div>
               <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-4">
-                Công Nghệ Hash Chain <br />
-                Chống Làm Giả Lịch Sử
+                Dữ Liệu Được Khoá Lại, <br />
+                Không Ai Sửa Được Lịch Sử
               </h2>
               <p className="text-sm sm:text-base text-slate-600 mb-6 leading-relaxed">
-                Mỗi mắt xích khi ghi nhận sự kiện (thu hoạch, kiểm định, vận chuyển...) đều tạo ra một mã băm mật mã <strong>SHA-256</strong> gắn kết trực tiếp với mã băm của sự kiện trước đó.
+                Mỗi công đoạn (thu hoạch, kiểm định, vận chuyển...) được ghi lại và gắn chặt với công đoạn trước đó — giống như từng mắt xích trong một sợi dây chuyền. Muốn sửa một mắt xích, phải sửa được toàn bộ chuỗi phía sau, nên mọi thay đổi gian lận đều bị phát hiện ngay.
               </p>
 
               <div className="space-y-3.5">
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <strong className="text-sm text-slate-900 block">Dữ liệu Bất biến (Immutable):</strong>
+                    <strong className="text-sm text-slate-900 block">Không thể chỉnh sửa lịch sử:</strong>
                     <span className="text-xs sm:text-sm text-slate-600">
-                      Không cho phép chỉnh sửa hoặc xóa sự kiện lịch sử đã ghi nhận vào chuỗi.
+                      Một khi đã ghi nhận, thông tin từng công đoạn không thể bị xoá hay sửa lại.
                     </span>
                   </div>
                 </div>
@@ -416,7 +415,7 @@ export function HomePage() {
                   <div>
                     <strong className="text-sm text-slate-900 block">Phát hiện gian lận tức thời:</strong>
                     <span className="text-xs sm:text-sm text-slate-600">
-                      Bất kỳ thay đổi trái phép nào tại một mắt xích sẽ làm đứt gãy chuỗi băm (Hash Mismatch) và bị cảnh báo ngay.
+                      Bất kỳ thay đổi trái phép nào cũng sẽ bị hệ thống phát hiện và cảnh báo ngay lập tức.
                     </span>
                   </div>
                 </div>
@@ -424,100 +423,55 @@ export function HomePage() {
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <strong className="text-sm text-slate-900 block">Truy vết ngược (Traceback Recall):</strong>
+                    <strong className="text-sm text-slate-900 block">Truy vết ngược khi có sự cố:</strong>
                     <span className="text-xs sm:text-sm text-slate-600">
-                      Khi có sự cố an toàn thực phẩm, hệ thống tự động truy xuất ngược về nông trại và khoanh vùng các lô liên quan.
+                      Khi có sự cố an toàn thực phẩm, hệ thống tự động truy ngược về nông trại và khoanh vùng các lô liên quan.
                     </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Minh họa Hash Chain */}
-            <div className="bg-slate-900 text-slate-100 p-6 sm:p-8 rounded-2xl shadow-xl font-mono text-xs space-y-4 border border-slate-800">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <span className="text-emerald-400 font-bold">🔗 Hash Chain Verification Protocol</span>
-                <span className="text-slate-400 text-[10px]">SHA-256</span>
+            {/* Minh họa trực quan: chuỗi các bước được khoá với nhau */}
+            <div className="bg-slate-900 text-slate-100 p-6 sm:p-8 rounded-2xl shadow-xl space-y-4 border border-slate-800">
+              <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                <span className="text-emerald-400 font-bold text-sm">Chuỗi hành trình đã được xác thực</span>
               </div>
 
-              <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700 space-y-1.5">
-                <div className="text-emerald-300 font-semibold">Event #1: HARVEST (Thu hoạch)</div>
-                <div className="text-slate-400">PreviousHash: null (Root)</div>
-                <div className="text-amber-300 truncate">CurrentHash: 9b2d8f1e4a3b...c72e</div>
-              </div>
-
-              <div className="text-center text-slate-500">↓ linked by previousHash ↓</div>
-
-              <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700 space-y-1.5">
-                <div className="text-emerald-300 font-semibold">Event #2: INSPECTION (Kiểm định)</div>
-                <div className="text-amber-300 truncate">PreviousHash: 9b2d8f1e4a3b...c72e</div>
-                <div className="text-cyan-300 truncate">CurrentHash: a4f91c78e23b...8d01</div>
-              </div>
-
-              <div className="text-center text-slate-500">↓ linked by previousHash ↓</div>
-
-              <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700 space-y-1.5">
-                <div className="text-emerald-300 font-semibold">Event #3: TRANSPORT (Vận chuyển xe lạnh)</div>
-                <div className="text-cyan-300 truncate">PreviousHash: a4f91c78e23b...8d01</div>
-                <div className="text-green-400 truncate">CurrentHash: 6e7c10b48a12...99ff (VERIFIED ✓)</div>
-              </div>
+              {[
+                { icon: '🌾', label: 'Thu hoạch', desc: 'Tại nông trại' },
+                { icon: '🔬', label: 'Kiểm định', desc: 'Đạt tiêu chuẩn chất lượng' },
+                { icon: '🚚', label: 'Vận chuyển', desc: 'Xe lạnh chuyên dụng' },
+              ].map((step, idx, arr) => (
+                <div key={step.label}>
+                  <div className="flex items-center gap-3 bg-slate-800/80 p-3.5 rounded-xl border border-slate-700">
+                    <span className="text-2xl">{step.icon}</span>
+                    <div>
+                      <div className="font-semibold text-sm">{step.label}</div>
+                      <div className="text-slate-400 text-xs">{step.desc}</div>
+                    </div>
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 ml-auto flex-shrink-0" />
+                  </div>
+                  {idx < arr.length - 1 && (
+                    <div className="text-center text-slate-500 text-xs py-1">🔗 gắn liền với bước trước</div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* 6. MODAL HƯỚNG DẪN QUÉT QR */}
-      {showQrModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-scale-up relative">
-            <button
-              onClick={() => setShowQrModal(false)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-slate-700"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="text-center">
-              <div className="w-14 h-14 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Camera className="w-7 h-7" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Quét Mã QR Nông Sản</h3>
-              <p className="text-sm text-slate-600 mb-6">
-                Sử dụng camera điện thoại hoặc ứng dụng Zalo / Quét mã trên bao bì nông sản để tự động mở trang tra cứu.
-              </p>
-
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-left text-xs text-slate-700 space-y-2 mb-6">
-                <p>
-                  <strong>Cách 1:</strong> Mở camera trên điện thoại &bull; Hướng vào mã QR in trên tem nhãn.
-                </p>
-                <p>
-                  <strong>Cách 2:</strong> Hoặc nhập trực tiếp mã lô hàng (ví dụ: <span className="font-mono font-bold text-emerald-700">B001</span>) vào thanh tìm kiếm ở trang chủ.
-                </p>
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowQrModal(false)
-                    handleQuickTrace('B001')
-                  }}
-                  className="flex-1 py-2.5 bg-emerald-700 text-white rounded-xl font-semibold text-sm hover:bg-emerald-800 transition"
-                >
-                  Thử xem mã mẫu B001
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowQrModal(false)}
-                  className="px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-semibold text-sm hover:bg-slate-200 transition"
-                >
-                  Đóng
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 6. QUÉT MÃ QR BẰNG CAMERA THẬT */}
+      <QrScannerDialog
+        open={showQrModal}
+        onClose={() => setShowQrModal(false)}
+        onScanned={(id) => {
+          setShowQrModal(false)
+          handleQuickTrace(String(id))
+        }}
+      />
 
       {/* 7. FOOTER */}
       <footer className="mt-auto bg-slate-900 text-slate-400 py-10 text-xs">

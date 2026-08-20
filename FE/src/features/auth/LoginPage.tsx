@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Alert, Box, Button, IconButton, InputAdornment, Paper, TextField, Typography } from '@mui/material'
-import { Visibility, VisibilityOff } from '@mui/icons-material'
+import { HomeRounded, Visibility, VisibilityOff } from '@mui/icons-material'
 import { useAuthStore } from './auth.store'
 import { ROLE_DEFAULT_ROUTES } from './auth.types'
 
@@ -35,8 +35,13 @@ export function LoginPage() {
   }
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-      <Paper sx={{ width: '100%', maxWidth: 400, p: 4, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, minHeight: '100vh', justifyContent: 'center', p: 2 }}>
+      <Box sx={{ width: '100%', maxWidth: 400 }}>
+        <Button component={Link} to="/" startIcon={<HomeRounded />} size="small" sx={{ mb: 1, color: 'text.secondary' }}>
+          Về trang chủ
+        </Button>
+      </Box>
+      <Paper sx={{ width: '100%', maxWidth: 400, p: 4, border: '1px solid', borderColor: 'divider', borderRadius: 3, textAlign: 'center' }}>
         <Typography variant="h5" sx={{ fontWeight: 800 }}>
           {t('auth.login')}
         </Typography>

@@ -15,6 +15,7 @@ import {
   Agriculture,
   FactCheckRounded as ClipboardCheck,
   Factory,
+  HomeRounded,
   Visibility,
   VisibilityOff,
 } from '@mui/icons-material'
@@ -79,8 +80,13 @@ export function RegisterPage() {
   const errorMessage = formError ?? error
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-      <Paper sx={{ width: '100%', maxWidth: 560, p: 4, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, minHeight: '100vh', justifyContent: 'center', p: 2 }}>
+      <Box sx={{ width: '100%', maxWidth: 560 }}>
+        <Button component={Link} to="/" startIcon={<HomeRounded />} size="small" sx={{ mb: 1, color: 'text.secondary' }}>
+          Về trang chủ
+        </Button>
+      </Box>
+      <Paper sx={{ width: '100%', maxWidth: 560, p: 4, border: '1px solid', borderColor: 'divider', borderRadius: 3, textAlign: 'center' }}>
         <Typography variant="h5" sx={{ fontWeight: 800 }}>
           {t('auth.register')}
         </Typography>

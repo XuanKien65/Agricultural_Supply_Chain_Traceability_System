@@ -101,7 +101,10 @@ public sealed class BatchRepository(ApplicationDbContext db) : IBatchRepository
         {
             cmd.CommandText = @"
                 SELECT b.Id, p.Name AS ProductName, p.Unit AS ProductUnit, o.Name AS ProducerOrgName,
-                       b.QRCode, NULL AS HarvestDate, b.Quantity, 'ACTIVE' AS Status, b.CreatedAt
+                       b.QRCode, NULL AS HarvestDate, b.Quantity,
+                       CASE WHEN EXISTS (SELECT 1 FROM Recalls r WHERE r.BatchId = b.Id AND r.Status = 'ACTIVE')
+                            THEN 'RECALLED' ELSE 'ACTIVE' END AS Status,
+                       b.CreatedAt
                 FROM Batches b
                 JOIN Products p ON p.Id = b.ProductId
                 LEFT JOIN Organizations o ON o.Id = b.CurrentOrganizationId
