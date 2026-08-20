@@ -18,10 +18,10 @@ public sealed class PublicTraceController(ISender sender) : ControllerBase
     /// GET /public/trace/{batchId} - Tra cứu thông tin toàn bộ lô hàng theo BatchId / QR.
     /// Bao gồm thông tin sản phẩm, timeline sự kiện, chứng nhận VietGAP, kiểm định, cảnh báo thu hồi.
     /// </summary>
-    [HttpGet("api/v1/public/trace/{batchId:int}")]
-    [HttpGet("api/public/trace/{batchId:int}")]
-    [HttpGet("public/trace/{batchId:int}")]
-    public async Task<IActionResult> GetPublicTrace(int batchId, CancellationToken ct)
+    [HttpGet("api/v1/public/trace/{batchId}")]
+    [HttpGet("api/public/trace/{batchId}")]
+    [HttpGet("public/trace/{batchId}")]
+    public async Task<IActionResult> GetPublicTrace(string batchId, CancellationToken ct)
     {
         var result = await sender.Send(new GetPublicTraceQuery(batchId), ct);
         return Ok(ApiResponse.Ok(result));
@@ -30,10 +30,10 @@ public sealed class PublicTraceController(ISender sender) : ControllerBase
     /// <summary>
     /// GET /public/trace/{batchId}/lineage - Lấy sơ đồ cây phả hệ tách/gộp của lô hàng.
     /// </summary>
-    [HttpGet("api/v1/public/trace/{batchId:int}/lineage")]
-    [HttpGet("api/public/trace/{batchId:int}/lineage")]
-    [HttpGet("public/trace/{batchId:int}/lineage")]
-    public async Task<IActionResult> GetBatchLineage(int batchId, CancellationToken ct)
+    [HttpGet("api/v1/public/trace/{batchId}/lineage")]
+    [HttpGet("api/public/trace/{batchId}/lineage")]
+    [HttpGet("public/trace/{batchId}/lineage")]
+    public async Task<IActionResult> GetBatchLineage(string batchId, CancellationToken ct)
     {
         var result = await sender.Send(new GetBatchLineageQuery(batchId), ct);
         return Ok(ApiResponse.Ok(result));

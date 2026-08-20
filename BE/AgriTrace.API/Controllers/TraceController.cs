@@ -20,11 +20,11 @@ public sealed class TraceController(ISender sender) : ControllerBase
     /// Tra cứu công khai lô hàng theo BatchId.
     /// Trả về: Batch + Timeline Events + Inspections + Certificates + Hash Chain Verification.
     /// </summary>
-    [HttpGet("{batchId:int}")]
-    public async Task<IActionResult> GetPublicTrace(int batchId, CancellationToken ct) =>
+    [HttpGet("{batchId}")]
+    public async Task<IActionResult> GetPublicTrace(string batchId, CancellationToken ct) =>
         Ok(await sender.Send(new GetPublicTraceQuery(batchId), ct));
 
-    [HttpGet("{batchId:int}/lineage")]
-    public async Task<IActionResult> GetPublicLineage(int batchId, CancellationToken ct) =>
+    [HttpGet("{batchId}/lineage")]
+    public async Task<IActionResult> GetPublicLineage(string batchId, CancellationToken ct) =>
         Ok(await sender.Send(new GetPublicLineageQuery(batchId), ct));
 }
