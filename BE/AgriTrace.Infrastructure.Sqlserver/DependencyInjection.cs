@@ -19,15 +19,39 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(connectionString));
 
+        // Distributed Cache (Redis if configured, otherwise Memory)
+        var redisConn = configuration.GetConnectionString("Redis") ?? configuration["Redis:ConnectionString"];
+        if (!string.IsNullOrWhiteSpace(redisConn))
+        {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = redisConn;
+                options.InstanceName = "AgriTrace_";
+            });
+        }
+        else
+        {
+            services.AddDistributedMemoryCache();
+        }
+
+        services.AddScoped<ICacheService, RedisCacheService>();
+
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IBatchRepository, BatchRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
 
-        // READ + USER CRUD
+        // Person 3 Repositories
+        services.AddScoped<IInspectionRepository, InspectionRepository>();
+        services.AddScoped<ICertificateRepository, CertificateRepository>();
+        services.AddScoped<IRecallRepository, RecallRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IPublicTraceRepository, PublicTraceRepository>();
+        services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();
+
+        // Admin CRUD repositories
         services.AddScoped<IAdminRepository, AdminRepository>();
-        // CRUD các bảng Admin còn lại
         services.AddScoped<IAdminCrudRepository, AdminCrudRepository>();
         services.AddScoped<IRecallNotificationRepository, RecallNotificationRepository>();
 
