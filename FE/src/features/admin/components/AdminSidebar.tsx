@@ -1,20 +1,14 @@
 import {
-  AgricultureRounded,
   ApartmentRounded,
-  BadgeRounded,
   DashboardRounded,
-  FactCheckRounded,
   Inventory2Rounded,
-  LocalShippingRounded,
-  PeopleAltRounded,
-  TimelineRounded,
-  WarningAmberRounded,
-  WorkspacePremiumRounded,
+  ListAltRounded,
+  PeopleRounded,
+  PersonRounded,
 } from '@mui/icons-material'
 
 import {
   Box,
-  Divider,
   List,
   ListItemButton,
   ListItemIcon,
@@ -27,217 +21,197 @@ import {
   useNavigate,
 } from 'react-router-dom'
 
-const items = [
+import {
+  useAuthStore,
+} from '@/features/auth/auth.store'
+
+const menuItems = [
   {
     label: 'Tổng quan',
     path: '/admin',
-    icon: <DashboardRounded />,
+    icon:
+      <DashboardRounded />,
+    roles: [
+      'ADMIN',
+      'ORGADMIN',
+    ],
   },
+
   {
-    label: 'Vai trò',
-    path: '/admin/roles',
-    icon: <BadgeRounded />,
+    label: 'Tổ chức',
+    path:
+      '/admin/organizations',
+    icon:
+      <ApartmentRounded />,
+    roles: ['ADMIN'],
   },
-  {
-    label: 'Đơn vị',
-    path: '/admin/units',
-    icon: <ApartmentRounded />,
-  },
+
   {
     label: 'Người dùng',
     path: '/admin/users',
-    icon: <PeopleAltRounded />,
+    icon: <PeopleRounded />,
+    roles: [
+      'ADMIN',
+      'ORGADMIN',
+    ],
   },
+
   {
     label: 'Sản phẩm',
-    path: '/admin/products',
-    icon: <Inventory2Rounded />,
+    path:
+      '/admin/products',
+    icon:
+      <Inventory2Rounded />,
+    roles: [
+      'ADMIN',
+      'ORGADMIN',
+    ],
   },
+
   {
-    label: 'Lô hàng',
-    path: '/admin/batches',
-    icon: <LocalShippingRounded />,
+    label: 'Danh mục',
+    path:
+      '/admin/lookups',
+    icon:
+      <ListAltRounded />,
+    roles: [
+      'ADMIN',
+      'ORGADMIN',
+    ],
   },
+
   {
-    label: 'Sự kiện',
-    path: '/admin/events',
-    icon: <TimelineRounded />,
-  },
-  {
-    label: 'Kiểm định',
-    path: '/admin/inspections',
-    icon: <FactCheckRounded />,
-  },
-  {
-    label: 'Chứng nhận',
-    path: '/admin/certificates',
-    icon: <WorkspacePremiumRounded />,
-  },
-  {
-    label: 'Thu hồi',
-    path: '/admin/recalls',
-    icon: <WarningAmberRounded />,
+    label: 'Tài khoản',
+    path:
+      '/admin/account',
+    icon:
+      <PersonRounded />,
+    roles: [
+      'ADMIN',
+      'ORGADMIN',
+    ],
   },
 ]
 
-interface Props {
-  onNavigate?: () => void
-}
+export default function AdminSidebar() {
+  const navigate =
+    useNavigate()
 
-export function AdminSidebar({
-  onNavigate,
-}: Props) {
-  const navigate = useNavigate()
-  const location = useLocation()
+  const location =
+    useLocation()
 
-  function isActive(
-    path: string,
-  ) {
-    if (path === '/admin') {
-      return (
-        location.pathname ===
-        '/admin'
-      )
-    }
-
-    return location.pathname.startsWith(
-      path,
+  const user =
+    useAuthStore(
+      (state) =>
+        state.user,
     )
-  }
 
   return (
     <Box
       sx={{
-        height: '100%',
+        width: 260,
 
-        bgcolor: '#123D24',
+        minHeight: '100vh',
+
+        bgcolor: '#123524',
 
         color: 'white',
+
+        px: 2,
+
+        py: 3,
+
+        flexShrink: 0,
       }}
     >
-      <Box
+      <Typography
+        variant="h5"
+        fontWeight={900}
         sx={{
-          px: 2.5,
-          py: 2.3,
-
-          display: 'flex',
-          alignItems: 'center',
-
-          gap: 1.2,
+          px: 2,
+          mb: 3,
         }}
       >
-        <Box
-          sx={{
-            width: 42,
-            height: 42,
+        AgriTrace
+      </Typography>
 
-            display: 'grid',
-            placeItems: 'center',
+      <List>
+        {menuItems
+          .filter(
+            (item) =>
+              user &&
+              item.roles.includes(
+                user.role,
+              ),
+          )
+          .map((item) => {
+            const selected =
+              location.pathname ===
+                item.path ||
+              (
+                item.path !==
+                  '/admin' &&
+                location.pathname
+                  .startsWith(
+                    item.path,
+                  )
+              )
 
-            borderRadius: 2.2,
-
-            bgcolor: '#E8F5E9',
-            color: '#19713A',
-          }}
-        >
-          <AgricultureRounded />
-        </Box>
-
-        <Box>
-          <Typography
-            sx={{
-              fontSize: 18,
-              fontWeight: 900,
-            }}
-          >
-            AgriTrace
-          </Typography>
-
-          <Typography
-            sx={{
-              color: '#A8CFB5',
-
-              fontSize: 10,
-              fontWeight: 700,
-            }}
-          >
-            ADMIN PANEL
-          </Typography>
-        </Box>
-      </Box>
-
-      <Divider
-        sx={{
-          borderColor:
-            'rgba(255,255,255,0.1)',
-        }}
-      />
-
-      <List
-        sx={{
-          px: 1.4,
-          py: 1.6,
-        }}
-      >
-        {items.map((item) => {
-          const active =
-            isActive(item.path)
-
-          return (
-            <ListItemButton
-              key={item.path}
-              onClick={() => {
-                navigate(item.path)
-
-                onNavigate?.()
-              }}
-              sx={{
-                mb: 0.4,
-
-                borderRadius: 2,
-
-                color: active
-                  ? 'white'
-                  : '#B7D4C0',
-
-                bgcolor: active
-                  ? 'rgba(255,255,255,0.14)'
-                  : 'transparent',
-
-                '&:hover': {
-                  bgcolor:
-                    'rgba(255,255,255,0.1)',
-                },
-              }}
-            >
-              <ListItemIcon
+            return (
+              <ListItemButton
+                key={
+                  item.path
+                }
+                selected={
+                  selected
+                }
+                onClick={() =>
+                  navigate(
+                    item.path,
+                  )
+                }
                 sx={{
-                  minWidth: 40,
+                  borderRadius: 2,
 
-                  color: active
-                    ? 'white'
-                    : '#8EBA9C',
+                  mb: 0.75,
+
+                  '&:hover': {
+                    bgcolor:
+                      'rgba(255,255,255,0.10)',
+                  },
+
+                  '&.Mui-selected':
+                    {
+                      bgcolor:
+                        'rgba(255,255,255,0.16)',
+                    },
+
+                  '&.Mui-selected:hover':
+                    {
+                      bgcolor:
+                        'rgba(255,255,255,0.20)',
+                    },
                 }}
               >
-                {item.icon}
-              </ListItemIcon>
+                <ListItemIcon
+                  sx={{
+                    color:
+                      'inherit',
 
-              <ListItemText
-                primary={
-                  item.label
-                }
-                slotProps={{
-                  primary: {
-                    sx: {
-                      fontSize: 14,
-                      fontWeight: active ? 800 : 600,
-                    },
-                  },
-                }}
-              />
-            </ListItemButton>
-          )
-        })}
+                    minWidth: 42,
+                  }}
+                >
+                  {item.icon}
+                </ListItemIcon>
+
+                <ListItemText
+                  primary={
+                    item.label
+                  }
+                />
+              </ListItemButton>
+            )
+          })}
       </List>
     </Box>
   )

@@ -1,101 +1,332 @@
-import { useState, type FormEvent } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
-import { Alert, Box, Button, IconButton, InputAdornment, Paper, TextField, Typography } from '@mui/material'
-import { Visibility, VisibilityOff } from '@mui/icons-material'
-import { useAuthStore } from './auth.store'
+import {
+  useState,
+  type FormEvent,
+} from 'react'
 
-interface LocationState {
-  from?: { pathname: string }
-}
+import {
+  AgricultureRounded,
+  LockRounded,
+} from '@mui/icons-material'
 
-export function LoginPage() {
-  const { t } = useTranslation()
-  const navigate = useNavigate()
-  const location = useLocation()
-  const { login, status, error } = useAuthStore()
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Container,
+  InputAdornment,
+  Paper,
+  TextField,
+  Typography,
+} from '@mui/material'
 
-  const [username, setUsername] = useState('superadmin')
-  const [password, setPassword] = useState('Admin@123456')
-  const [showPassword, setShowPassword] = useState(false)
+import {
+  Navigate,
+  useNavigate,
+} from 'react-router-dom'
 
-  const redirectTo = (location.state as LocationState)?.from?.pathname ?? '/'
+import { ApiError }
+  from '@/lib/api/http'
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault()
-    try {
-      await login({ username, password })
-      navigate(redirectTo, { replace: true })
-    } catch {
-      /* error surfaced via store */
-    }
+import { authApi }
+  from './auth.api'
+
+import { useAuthStore }
+  from './auth.store'
+
+export default function LoginPage() {
+  const navigate =
+    useNavigate()
+
+  const isAuthenticated =
+    useAuthStore(
+      (state) =>
+        state.isAuthenticated,
+    )
+
+  const setAuth =
+    useAuthStore(
+      (state) =>
+        state.setAuth,
+    )
+
+  const [email, setEmail] =
+    useState('')
+
+  const [
+    password,
+    setPassword,
+  ] = useState('')
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(false)
+
+  const [
+    error,
+    setError,
+  ] = useState('')
+
+  if (isAuthenticated) {
+    return (
+      <Navigate
+        to="/"
+        replace
+      />
+    )
   }
 
-  return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-      <Paper sx={{ width: '100%', maxWidth: 400, p: 4, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 800 }}>
-          {t('auth.login')}
-        </Typography>
-        <Typography sx={{ mt: 0.5, color: 'text.secondary', fontSize: 14 }}>
-          {t('auth.signInToContinue')}
-        </Typography>
+  const handleSubmit =
+    async (
+      event: FormEvent,
+    ) => {
+      event.preventDefault()
 
-        <Box component="form" onSubmit={onSubmit} sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField
-            label={t('auth.usernameOrEmail', 'Tên đăng nhập hoặc Email')}
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            fullWidth
-          />
-          <TextField
-            label={t('auth.password')}
-            type={showPassword ? 'text' : 'password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            fullWidth
-            slotProps={{
-              input: {
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      size="small"
-                      onClick={() => setShowPassword((v) => !v)}
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              },
+      if (
+        !email.trim() ||
+        !password
+      ) {
+        setError(
+          'Vui lòng nhập email và mật khẩu.',
+        )
+
+        return
+      }
+
+      try {
+        setLoading(true)
+        setError('')
+
+        const result =
+          await authApi.login({
+            email:
+              email.trim(),
+
+            password,
+          })
+
+        setAuth(
+          result.accessToken,
+          result.refreshToken,
+          result.user,
+        )
+
+        if (
+          result.user.role ===
+            'ADMIN' ||
+          result.user.role ===
+            'ORGADMIN'
+        ) {
+          navigate(
+            '/admin',
+            {
+              replace: true,
+            },
+          )
+
+          return
+        }
+
+        navigate(
+          '/',
+          {
+            replace: true,
+          },
+        )
+      } catch (err) {
+        if (
+          err instanceof ApiError
+        ) {
+          setError(
+            err.message,
+          )
+        } else {
+          setError(
+            'Không thể đăng nhập.',
+          )
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+
+        display: 'flex',
+
+        alignItems: 'center',
+
+        background:
+          'linear-gradient(135deg, #eef7ef 0%, #ffffff 48%, #e6f4ea 100%)',
+
+        py: 4,
+      }}
+    >
+      <Container maxWidth="sm">
+        <Paper
+          elevation={0}
+          sx={{
+            p: {
+              xs: 3,
+              sm: 5,
+            },
+
+            borderRadius: 4,
+
+            border:
+              '1px solid rgba(46,125,50,0.14)',
+
+            boxShadow:
+              '0 24px 80px rgba(20,80,40,0.12)',
+          }}
+        >
+          <Box
+            sx={{
+              width: 70,
+
+              height: 70,
+
+              borderRadius: 3,
+
+              bgcolor:
+                'success.main',
+
+              color: 'white',
+
+              display: 'flex',
+
+              alignItems:
+                'center',
+
+              justifyContent:
+                'center',
+
+              mx: 'auto',
+
+              mb: 2,
             }}
-          />
+          >
+            <AgricultureRounded
+              sx={{
+                fontSize: 40,
+              }}
+            />
+          </Box>
+
+          <Typography
+            variant="h4"
+            fontWeight={900}
+            textAlign="center"
+          >
+            AgriTrace
+          </Typography>
+
+          <Typography
+            color="text.secondary"
+            textAlign="center"
+            sx={{
+              mt: 1,
+              mb: 4,
+            }}
+          >
+            Hệ thống truy xuất
+            nguồn gốc nông sản
+          </Typography>
 
           {error && (
-            <Alert severity="error" variant="filled" sx={{ borderRadius: 2, fontSize: 13 }}>
+            <Alert
+              severity="error"
+              sx={{
+                mb: 2,
+              }}
+            >
               {error}
             </Alert>
           )}
 
-          <Button type="submit" variant="contained" loading={status === 'loading'} fullWidth>
-            {t('auth.login')}
-          </Button>
+          <Box
+            component="form"
+            onSubmit={
+              handleSubmit
+            }
+            sx={{
+              display: 'flex',
 
-          <Typography sx={{ textAlign: 'center', fontSize: 12, color: 'text.disabled' }}>
-            superadmin / Admin@123456 (Admin) | admin@agritrace.vn / Password@123
-          </Typography>
+              flexDirection:
+                'column',
 
-          <Typography sx={{ textAlign: 'center', fontSize: 14, color: 'text.secondary' }}>
-            {t('auth.noAccount')}{' '}
-            <Link to="/register" style={{ color: 'inherit', fontWeight: 600 }}>
-              {t('auth.signUp')}
-            </Link>
-          </Typography>
-        </Box>
-      </Paper>
+              gap: 2.5,
+            }}
+          >
+            <TextField
+              fullWidth
+              required
+              type="email"
+              label="Email"
+              value={email}
+              autoComplete="email"
+              onChange={(e) =>
+                setEmail(
+                  e.target.value,
+                )
+              }
+            />
+
+            <TextField
+              fullWidth
+              required
+              type="password"
+              label="Mật khẩu"
+              value={password}
+              autoComplete="current-password"
+              onChange={(e) =>
+                setPassword(
+                  e.target.value,
+                )
+              }
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockRounded />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              disabled={loading}
+              sx={{
+                minHeight: 50,
+
+                borderRadius: 2.5,
+
+                fontWeight: 700,
+
+                textTransform:
+                  'none',
+              }}
+            >
+              {loading ? (
+                <CircularProgress
+                  size={23}
+                  color="inherit"
+                />
+              ) : (
+                'Đăng nhập'
+              )}
+            </Button>
+          </Box>
+        </Paper>
+      </Container>
     </Box>
   )
 }

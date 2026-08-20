@@ -1,9 +1,7 @@
 using AgriTrace.API.Models;
 using AgriTrace.Application.Features.Admin;
-using AgriTrace.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgriTrace.API.Controllers;
@@ -15,34 +13,40 @@ public sealed class AdminController(
     ISender sender)
     : ControllerBase
 {
-    private static readonly PasswordHasher<object>
-        PasswordHasher = new();
-
-    private static readonly object
-        PasswordSubject = new();
-
-
     // =========================
-    // DASHBOARD + ROLES
+    // DASHBOARD
     // =========================
 
     [HttpGet("dashboard")]
     public async Task<IActionResult> Dashboard(
-        CancellationToken ct) =>
-        Ok(
+        CancellationToken ct)
+    {
+        var result =
             await sender.Send(
                 new GetAdminDashboardQuery(),
-                ct));
+                ct);
 
-    // Database.md không có bảng Roles.
-    // Role lấy trực tiếp từ Users.Role.
+        return Ok(result);
+    }
+
+
+    // =========================
+    // ROLES
+    // =========================
+
+    // Database hiện tại không có bảng Roles.
+    // Role được lưu trực tiếp tại Users.Role.
     [HttpGet("roles")]
     public async Task<IActionResult> Roles(
-        CancellationToken ct) =>
-        Ok(
+        CancellationToken ct)
+    {
+        var result =
             await sender.Send(
                 new GetAdminRolesQuery(),
-                ct));
+                ct);
+
+        return Ok(result);
+    }
 
 
     // =========================
@@ -51,23 +55,27 @@ public sealed class AdminController(
 
     [HttpGet("organizations")]
     public async Task<IActionResult> Organizations(
-        CancellationToken ct) =>
-        Ok(
+        CancellationToken ct)
+    {
+        var result =
             await sender.Send(
                 new GetAdminOrganizationsQuery(),
-                ct));
+                ct);
+
+        return Ok(result);
+    }
 
     [HttpPost("organizations")]
     public async Task<IActionResult> CreateOrganization(
-        AdminOrganizationRequest r,
+        AdminOrganizationRequest request,
         CancellationToken ct)
     {
         var result =
             await sender.Send(
                 new CreateAdminOrganizationCommand(
-                    r.Name,
-                    r.Type,
-                    r.Status),
+                    request.Name,
+                    request.Type,
+                    request.Status),
                 ct);
 
         return Created(
@@ -78,16 +86,20 @@ public sealed class AdminController(
     [HttpPut("organizations/{id:int}")]
     public async Task<IActionResult> UpdateOrganization(
         int id,
-        AdminOrganizationRequest r,
-        CancellationToken ct) =>
-        Ok(
+        AdminOrganizationRequest request,
+        CancellationToken ct)
+    {
+        var result =
             await sender.Send(
                 new UpdateAdminOrganizationCommand(
                     id,
-                    r.Name,
-                    r.Type,
-                    r.Status),
-                ct));
+                    request.Name,
+                    request.Type,
+                    request.Status),
+                ct);
+
+        return Ok(result);
+    }
 
     [HttpDelete("organizations/{id:int}")]
     public async Task<IActionResult> DeactivateOrganization(
@@ -95,7 +107,8 @@ public sealed class AdminController(
         CancellationToken ct)
     {
         await sender.Send(
-            new DeactivateAdminOrganizationCommand(id),
+            new DeactivateAdminOrganizationCommand(
+                id),
             ct);
 
         return NoContent();
@@ -108,26 +121,34 @@ public sealed class AdminController(
 
     [HttpGet("users")]
     public async Task<IActionResult> Users(
-        CancellationToken ct) =>
-        Ok(
-            await sender.Send(
-                new GetAdminUsersQuery(),
-                ct));
-
-    [HttpPost("users")]
-    public async Task<IActionResult> CreateUser(
-        AdminUserRequest r,
         CancellationToken ct)
     {
         var result =
             await sender.Send(
+                new GetAdminUsersQuery(),
+                ct);
+
+        return Ok(result);
+    }
+
+    [HttpPost("users")]
+    public async Task<IActionResult> CreateUser(
+        AdminUserRequest request,
+        CancellationToken ct)
+    {
+        var passwordHash =
+            HashPassword(
+                request.Password);
+
+        var result =
+            await sender.Send(
                 new CreateAdminUserCommand(
-                    r.FullName,
-                    r.Email,
-                    HashPassword(r.Password),
-                    r.Role,
-                    r.OrganizationId,
-                    r.IsActive),
+                    request.FullName,
+                    request.Email,
+                    passwordHash,
+                    request.Role,
+                    request.OrganizationId,
+                    request.IsActive),
                 ct);
 
         return Created(
@@ -138,19 +159,27 @@ public sealed class AdminController(
     [HttpPut("users/{id:int}")]
     public async Task<IActionResult> UpdateUser(
         int id,
-        AdminUserRequest r,
-        CancellationToken ct) =>
-        Ok(
+        AdminUserRequest request,
+        CancellationToken ct)
+    {
+        var passwordHash =
+            HashPassword(
+                request.Password);
+
+        var result =
             await sender.Send(
                 new UpdateAdminUserCommand(
                     id,
-                    r.FullName,
-                    r.Email,
-                    HashPassword(r.Password),
-                    r.Role,
-                    r.OrganizationId,
-                    r.IsActive),
-                ct));
+                    request.FullName,
+                    request.Email,
+                    passwordHash,
+                    request.Role,
+                    request.OrganizationId,
+                    request.IsActive),
+                ct);
+
+        return Ok(result);
+    }
 
     [HttpDelete("users/{id:int}")]
     public async Task<IActionResult> DeactivateUser(
@@ -158,7 +187,8 @@ public sealed class AdminController(
         CancellationToken ct)
     {
         await sender.Send(
-            new DeactivateAdminUserCommand(id),
+            new DeactivateAdminUserCommand(
+                id),
             ct);
 
         return NoContent();
@@ -171,24 +201,28 @@ public sealed class AdminController(
 
     [HttpGet("products")]
     public async Task<IActionResult> Products(
-        CancellationToken ct) =>
-        Ok(
+        CancellationToken ct)
+    {
+        var result =
             await sender.Send(
                 new GetAdminProductsQuery(),
-                ct));
+                ct);
+
+        return Ok(result);
+    }
 
     [HttpPost("products")]
     public async Task<IActionResult> CreateProduct(
-        AdminProductRequest r,
+        AdminProductRequest request,
         CancellationToken ct)
     {
         var result =
             await sender.Send(
                 new CreateAdminProductCommand(
-                    r.Name,
-                    r.Category,
-                    r.Unit,
-                    r.OrganizationId),
+                    request.Name,
+                    request.Category,
+                    request.Unit,
+                    request.OrganizationId),
                 ct);
 
         return Created(
@@ -199,17 +233,21 @@ public sealed class AdminController(
     [HttpPut("products/{id:int}")]
     public async Task<IActionResult> UpdateProduct(
         int id,
-        AdminProductRequest r,
-        CancellationToken ct) =>
-        Ok(
+        AdminProductRequest request,
+        CancellationToken ct)
+    {
+        var result =
             await sender.Send(
                 new UpdateAdminProductCommand(
                     id,
-                    r.Name,
-                    r.Category,
-                    r.Unit,
-                    r.OrganizationId),
-                ct));
+                    request.Name,
+                    request.Category,
+                    request.Unit,
+                    request.OrganizationId),
+                ct);
+
+        return Ok(result);
+    }
 
     [HttpDelete("products/{id:int}")]
     public async Task<IActionResult> DeleteProduct(
@@ -217,7 +255,8 @@ public sealed class AdminController(
         CancellationToken ct)
     {
         await sender.Send(
-            new DeleteAdminProductCommand(id),
+            new DeleteAdminProductCommand(
+                id),
             ct);
 
         return NoContent();
@@ -230,27 +269,31 @@ public sealed class AdminController(
 
     [HttpGet("batches")]
     public async Task<IActionResult> Batches(
-        CancellationToken ct) =>
-        Ok(
+        CancellationToken ct)
+    {
+        var result =
             await sender.Send(
                 new GetAdminBatchesQuery(),
-                ct));
+                ct);
+
+        return Ok(result);
+    }
 
     [HttpPost("batches")]
     public async Task<IActionResult> CreateBatch(
-        AdminBatchRequest r,
+        AdminBatchRequest request,
         CancellationToken ct)
     {
         var result =
             await sender.Send(
                 new CreateAdminBatchCommand(
-                    r.ProductId,
-                    r.BatchCode,
-                    r.Quantity,
-                    r.CurrentOrganizationId,
-                    r.ParentBatchId,
-                    r.RootBatchId,
-                    r.QrCode),
+                    request.ProductId,
+                    request.BatchCode,
+                    request.Quantity,
+                    request.CurrentOrganizationId,
+                    request.ParentBatchId,
+                    request.RootBatchId,
+                    request.QrCode),
                 ct);
 
         return Created(
@@ -261,20 +304,24 @@ public sealed class AdminController(
     [HttpPut("batches/{id:int}")]
     public async Task<IActionResult> UpdateBatch(
         int id,
-        AdminBatchRequest r,
-        CancellationToken ct) =>
-        Ok(
+        AdminBatchRequest request,
+        CancellationToken ct)
+    {
+        var result =
             await sender.Send(
                 new UpdateAdminBatchCommand(
                     id,
-                    r.ProductId,
-                    r.BatchCode,
-                    r.Quantity,
-                    r.CurrentOrganizationId,
-                    r.ParentBatchId,
-                    r.RootBatchId,
-                    r.QrCode),
-                ct));
+                    request.ProductId,
+                    request.BatchCode,
+                    request.Quantity,
+                    request.CurrentOrganizationId,
+                    request.ParentBatchId,
+                    request.RootBatchId,
+                    request.QrCode),
+                ct);
+
+        return Ok(result);
+    }
 
     [HttpDelete("batches/{id:int}")]
     public async Task<IActionResult> DeleteBatch(
@@ -282,7 +329,8 @@ public sealed class AdminController(
         CancellationToken ct)
     {
         await sender.Send(
-            new DeleteAdminBatchCommand(id),
+            new DeleteAdminBatchCommand(
+                id),
             ct);
 
         return NoContent();
@@ -295,30 +343,34 @@ public sealed class AdminController(
 
     [HttpGet("events")]
     public async Task<IActionResult> Events(
-        CancellationToken ct) =>
-        Ok(
+        CancellationToken ct)
+    {
+        var result =
             await sender.Send(
                 new GetAdminEventsQuery(),
-                ct));
+                ct);
 
-    // Không có PUT/DELETE event.
-    // Database.md quy định đây là lịch sử immutable.
+        return Ok(result);
+    }
+
+    // Event là append-only.
+    // Không tạo PUT hoặc DELETE cho Event.
     [HttpPost("events")]
     public async Task<IActionResult> CreateEvent(
-        AdminEventRequest r,
+        AdminEventRequest request,
         CancellationToken ct)
     {
         var result =
             await sender.Send(
                 new CreateAdminEventCommand(
-                    r.BatchId,
-                    r.EventType,
-                    r.OrganizationId,
-                    r.UserId,
-                    r.EventData,
-                    r.Location,
-                    r.PreviousHash,
-                    r.CurrentHash),
+                    request.BatchId,
+                    request.EventType,
+                    request.OrganizationId,
+                    request.UserId,
+                    request.EventData,
+                    request.Location,
+                    request.PreviousHash,
+                    request.CurrentHash),
                 ct);
 
         return Created(
@@ -333,24 +385,28 @@ public sealed class AdminController(
 
     [HttpGet("inspections")]
     public async Task<IActionResult> Inspections(
-        CancellationToken ct) =>
-        Ok(
+        CancellationToken ct)
+    {
+        var result =
             await sender.Send(
                 new GetAdminInspectionsQuery(),
-                ct));
+                ct);
+
+        return Ok(result);
+    }
 
     [HttpPost("inspections")]
     public async Task<IActionResult> CreateInspection(
-        AdminInspectionRequest r,
+        AdminInspectionRequest request,
         CancellationToken ct)
     {
         var result =
             await sender.Send(
                 new CreateAdminInspectionCommand(
-                    r.BatchId,
-                    r.InspectorId,
-                    r.Result,
-                    r.Notes),
+                    request.BatchId,
+                    request.InspectorId,
+                    request.Result,
+                    request.Notes),
                 ct);
 
         return Created(
@@ -361,17 +417,21 @@ public sealed class AdminController(
     [HttpPut("inspections/{id:int}")]
     public async Task<IActionResult> UpdateInspection(
         int id,
-        AdminInspectionRequest r,
-        CancellationToken ct) =>
-        Ok(
+        AdminInspectionRequest request,
+        CancellationToken ct)
+    {
+        var result =
             await sender.Send(
                 new UpdateAdminInspectionCommand(
                     id,
-                    r.BatchId,
-                    r.InspectorId,
-                    r.Result,
-                    r.Notes),
-                ct));
+                    request.BatchId,
+                    request.InspectorId,
+                    request.Result,
+                    request.Notes),
+                ct);
+
+        return Ok(result);
+    }
 
     [HttpDelete("inspections/{id:int}")]
     public async Task<IActionResult> DeleteInspection(
@@ -379,7 +439,8 @@ public sealed class AdminController(
         CancellationToken ct)
     {
         await sender.Send(
-            new DeleteAdminInspectionCommand(id),
+            new DeleteAdminInspectionCommand(
+                id),
             ct);
 
         return NoContent();
@@ -392,24 +453,28 @@ public sealed class AdminController(
 
     [HttpGet("certificates")]
     public async Task<IActionResult> Certificates(
-        CancellationToken ct) =>
-        Ok(
+        CancellationToken ct)
+    {
+        var result =
             await sender.Send(
                 new GetAdminCertificatesQuery(),
-                ct));
+                ct);
+
+        return Ok(result);
+    }
 
     [HttpPost("certificates")]
     public async Task<IActionResult> CreateCertificate(
-        AdminCertificateRequest r,
+        AdminCertificateRequest request,
         CancellationToken ct)
     {
         var result =
             await sender.Send(
                 new CreateAdminCertificateCommand(
-                    r.BatchId,
-                    r.InspectionId,
-                    r.CertificateType,
-                    r.FileUrl),
+                    request.BatchId,
+                    request.InspectionId,
+                    request.CertificateType,
+                    request.FileUrl),
                 ct);
 
         return Created(
@@ -420,17 +485,21 @@ public sealed class AdminController(
     [HttpPut("certificates/{id:int}")]
     public async Task<IActionResult> UpdateCertificate(
         int id,
-        AdminCertificateRequest r,
-        CancellationToken ct) =>
-        Ok(
+        AdminCertificateRequest request,
+        CancellationToken ct)
+    {
+        var result =
             await sender.Send(
                 new UpdateAdminCertificateCommand(
                     id,
-                    r.BatchId,
-                    r.InspectionId,
-                    r.CertificateType,
-                    r.FileUrl),
-                ct));
+                    request.BatchId,
+                    request.InspectionId,
+                    request.CertificateType,
+                    request.FileUrl),
+                ct);
+
+        return Ok(result);
+    }
 
     [HttpDelete("certificates/{id:int}")]
     public async Task<IActionResult> DeleteCertificate(
@@ -438,7 +507,8 @@ public sealed class AdminController(
         CancellationToken ct)
     {
         await sender.Send(
-            new DeleteAdminCertificateCommand(id),
+            new DeleteAdminCertificateCommand(
+                id),
             ct);
 
         return NoContent();
@@ -451,24 +521,28 @@ public sealed class AdminController(
 
     [HttpGet("recalls")]
     public async Task<IActionResult> Recalls(
-        CancellationToken ct) =>
-        Ok(
+        CancellationToken ct)
+    {
+        var result =
             await sender.Send(
                 new GetAdminRecallsQuery(),
-                ct));
+                ct);
+
+        return Ok(result);
+    }
 
     [HttpPost("recalls")]
     public async Task<IActionResult> CreateRecall(
-        AdminRecallRequest r,
+        AdminRecallRequest request,
         CancellationToken ct)
     {
         var result =
             await sender.Send(
                 new CreateAdminRecallCommand(
-                    r.BatchId,
-                    r.Reason,
-                    r.Severity,
-                    r.CreatedBy),
+                    request.BatchId,
+                    request.Reason,
+                    request.Severity,
+                    request.CreatedBy),
                 ct);
 
         return Created(
@@ -479,17 +553,21 @@ public sealed class AdminController(
     [HttpPut("recalls/{id:int}")]
     public async Task<IActionResult> UpdateRecall(
         int id,
-        AdminRecallRequest r,
-        CancellationToken ct) =>
-        Ok(
+        AdminRecallRequest request,
+        CancellationToken ct)
+    {
+        var result =
             await sender.Send(
                 new UpdateAdminRecallCommand(
                     id,
-                    r.BatchId,
-                    r.Reason,
-                    r.Severity,
-                    r.CreatedBy),
-                ct));
+                    request.BatchId,
+                    request.Reason,
+                    request.Severity,
+                    request.CreatedBy),
+                ct);
+
+        return Ok(result);
+    }
 
     [HttpDelete("recalls/{id:int}")]
     public async Task<IActionResult> DeleteRecall(
@@ -497,18 +575,30 @@ public sealed class AdminController(
         CancellationToken ct)
     {
         await sender.Send(
-            new DeleteAdminRecallCommand(id),
+            new DeleteAdminRecallCommand(
+                id),
             ct);
 
         return NoContent();
     }
 
 
+    // =========================
+    // PASSWORD
+    // =========================
+
     private static string? HashPassword(
-        string? password) =>
-        string.IsNullOrWhiteSpace(password)
-            ? null
-            : PasswordHasher.HashPassword(
-                PasswordSubject,
-                password);
+        string? password)
+    {
+        if (
+            string.IsNullOrWhiteSpace(
+                password))
+        {
+            return null;
+        }
+
+        return BCrypt.Net.BCrypt.HashPassword(
+            password,
+            workFactor: 11);
+    }
 }

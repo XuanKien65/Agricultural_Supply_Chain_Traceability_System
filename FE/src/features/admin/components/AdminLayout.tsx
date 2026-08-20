@@ -1,64 +1,63 @@
 import {
-  Suspense,
-  useState,
-} from 'react'
+  LogoutRounded,
+} from '@mui/icons-material'
 
 import {
   AppBar,
   Avatar,
   Box,
-  CircularProgress,
-  Drawer,
-  IconButton,
+  Button,
   Toolbar,
-  Tooltip,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material'
-
-import {
-  LogoutRounded,
-  MenuRounded,
-  NotificationsNoneRounded,
-} from '@mui/icons-material'
 
 import {
   Outlet,
   useNavigate,
 } from 'react-router-dom'
 
-import { useAuthStore } from '@/features/auth/auth.store'
+import {
+  authApi,
+} from '@/features/auth/auth.api'
 
-import { AdminSidebar } from './AdminSidebar'
+import {
+  useAuthStore,
+} from '@/features/auth/auth.store'
 
-const drawerWidth = 260
+import AdminSidebar
+  from './AdminSidebar'
 
-export function AdminLayout() {
-  const theme = useTheme()
-
-  const desktop =
-    useMediaQuery(
-      theme.breakpoints.up('md'),
-    )
-
+export default function AdminLayout() {
   const navigate =
     useNavigate()
 
-  const [
-    mobileOpen,
-    setMobileOpen,
-  ] = useState(false)
-
   const user =
     useAuthStore(
-      (state) => state.user,
+      (state) =>
+        state.user,
     )
 
-  const logout =
+  const clearAuth =
     useAuthStore(
-      (state) => state.logout,
+      (state) =>
+        state.clearAuth,
     )
+
+  const handleLogout =
+    async () => {
+      try {
+        await authApi.logout()
+      } finally {
+        clearAuth()
+
+        navigate(
+          '/login',
+          {
+            replace: true,
+          },
+        )
+      }
+    }
 
   return (
     <Box
@@ -67,266 +66,97 @@ export function AdminLayout() {
 
         display: 'flex',
 
-        bgcolor: '#F4F7F5',
+        bgcolor: '#f6f8f7',
       }}
     >
+      <AdminSidebar />
+
       <Box
-        component="nav"
         sx={{
-          width: {
-            md: drawerWidth,
-          },
+          flex: 1,
 
-          flexShrink: {
-            md: 0,
-          },
+          minWidth: 0,
         }}
       >
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={() =>
-            setMobileOpen(false)
-          }
-          ModalProps={{
-            keepMounted: true,
-          }}
+        <AppBar
+          position="sticky"
+          elevation={0}
           sx={{
-            display: {
-              xs: 'block',
-              md: 'none',
-            },
+            bgcolor: 'white',
 
-            '& .MuiDrawer-paper': {
-              width: drawerWidth,
-              border: 0,
-            },
+            color:
+              'text.primary',
+
+            borderBottom:
+              '1px solid',
+
+            borderColor:
+              'divider',
           }}
         >
-          <AdminSidebar
-            onNavigate={() =>
-              setMobileOpen(false)
-            }
-          />
-        </Drawer>
-
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: {
-              xs: 'none',
-              md: 'block',
-            },
-
-            '& .MuiDrawer-paper': {
-              width: drawerWidth,
-
-              border: 0,
-
-              boxSizing:
-                'border-box',
-            },
-          }}
-        >
-          <AdminSidebar />
-        </Drawer>
-      </Box>
-
-      <AppBar
-        position="fixed"
-        elevation={0}
-        sx={{
-          ml: {
-            md: `${drawerWidth}px`,
-          },
-
-          width: {
-            md: `calc(100% - ${drawerWidth}px)`,
-          },
-
-          bgcolor: 'white',
-
-          color:
-            'text.primary',
-
-          borderBottom:
-            '1px solid',
-
-          borderColor:
-            'divider',
-
-          zIndex:
-            theme.zIndex.drawer - 1,
-        }}
-      >
-        <Toolbar
-          sx={{
-            minHeight:
-              '68px !important',
-          }}
-        >
-          {!desktop && (
-            <IconButton
-              onClick={() =>
-                setMobileOpen(true)
-              }
-              sx={{
-                mr: 1,
-              }}
-            >
-              <MenuRounded />
-            </IconButton>
-          )}
-
-          <Typography
+          <Toolbar
             sx={{
-              flex: 1,
-
-              color:
-                'text.secondary',
-
-              fontSize: 14,
-
-              fontWeight: 700,
-            }}
-          >
-            Hệ thống truy xuất
-            nguồn gốc nông sản
-          </Typography>
-
-          <Tooltip title="Thông báo">
-            <IconButton>
-              <NotificationsNoneRounded />
-            </IconButton>
-          </Tooltip>
-
-          <Box
-            sx={{
-              ml: 1.5,
-
-              display: 'flex',
-
-              alignItems:
-                'center',
-
-              gap: 1,
+              gap: 2,
             }}
           >
             <Avatar
               sx={{
-                width: 36,
-                height: 36,
-
                 bgcolor:
-                  '#E8F5E9',
-
-                color:
-                  '#19713A',
-
-                fontSize: 13,
-
-                fontWeight: 900,
+                  'success.main',
               }}
             >
-              AD
+              {user?.fullName
+                ?.charAt(0)
+                .toUpperCase() ??
+                'A'}
             </Avatar>
 
             <Box
               sx={{
-                display: {
-                  xs: 'none',
-                  sm: 'block',
-                },
+                flex: 1,
               }}
             >
               <Typography
-                sx={{
-                  fontSize: 13,
-                  fontWeight: 800,
-                }}
+                fontWeight={700}
               >
-                {user?.name ??
-                  'Admin'}
+                {user?.fullName}
               </Typography>
 
               <Typography
-                sx={{
-                  color:
-                    'text.secondary',
-
-                  fontSize: 11,
-                }}
+                variant="caption"
+                color="text.secondary"
               >
-                {user?.email ?? ''}
+                {user?.role}
               </Typography>
             </Box>
 
-            <Tooltip title="Đăng xuất">
-              <IconButton
-                onClick={() => {
-                  logout()
-
-                  navigate(
-                    '/login',
-                  )
-                }}
-              >
+            <Button
+              startIcon={
                 <LogoutRounded />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Toolbar>
-      </AppBar>
-
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          minWidth: 0,
-
-          width: {
-            md: `calc(100% - ${drawerWidth}px)`,
-          },
-        }}
-      >
-        <Toolbar
-          sx={{
-            minHeight:
-              '68px !important',
-          }}
-        />
+              }
+              onClick={
+                handleLogout
+              }
+              sx={{
+                textTransform:
+                  'none',
+              }}
+            >
+              Đăng xuất
+            </Button>
+          </Toolbar>
+        </AppBar>
 
         <Box
+          component="main"
           sx={{
             p: {
               xs: 2,
-              md: 3,
+              md: 4,
             },
-
-            maxWidth: 1600,
-
-            mx: 'auto',
           }}
         >
-          <Suspense
-            fallback={
-              <Box
-                sx={{
-                  height: 300,
-
-                  display:
-                    'grid',
-
-                  placeItems:
-                    'center',
-                }}
-              >
-                <CircularProgress />
-              </Box>
-            }
-          >
-            <Outlet />
-          </Suspense>
+          <Outlet />
         </Box>
       </Box>
     </Box>

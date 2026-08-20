@@ -24,12 +24,15 @@ public sealed record UpdateAdminUserCommand(
     bool IsActive)
     : IRequest<AdminUserDto>;
 
-public sealed record DeactivateAdminUserCommand(int Id)
+public sealed record DeactivateAdminUserCommand(
+    int Id)
     : IRequest;
 
 public sealed class CreateAdminUserCommandHandler(
     IAdminRepository repository)
-    : IRequestHandler<CreateAdminUserCommand, AdminUserDto>
+    : IRequestHandler<
+        CreateAdminUserCommand,
+        AdminUserDto>
 {
     public async Task<AdminUserDto> Handle(
         CreateAdminUserCommand request,
@@ -60,7 +63,9 @@ public sealed class CreateAdminUserCommandHandler(
 
 public sealed class UpdateAdminUserCommandHandler(
     IAdminRepository repository)
-    : IRequestHandler<UpdateAdminUserCommand, AdminUserDto>
+    : IRequestHandler<
+        UpdateAdminUserCommand,
+        AdminUserDto>
 {
     public async Task<AdminUserDto> Handle(
         UpdateAdminUserCommand request,
@@ -87,8 +92,10 @@ public sealed class UpdateAdminUserCommandHandler(
                 cancellationToken);
 
         if (user is null)
+        {
             throw new NotFoundException(
                 $"User '{request.Id}' not found.");
+        }
 
         return user.ToDto();
     }
@@ -96,15 +103,19 @@ public sealed class UpdateAdminUserCommandHandler(
 
 public sealed class DeactivateAdminUserCommandHandler(
     IAdminRepository repository)
-    : IRequestHandler<DeactivateAdminUserCommand>
+    : IRequestHandler<
+        DeactivateAdminUserCommand>
 {
     public async Task Handle(
         DeactivateAdminUserCommand request,
         CancellationToken cancellationToken)
     {
-        if (!await repository.DeactivateUserAsync(
+        var success =
+            await repository.DeactivateUserAsync(
                 request.Id,
-                cancellationToken))
+                cancellationToken);
+
+        if (!success)
         {
             throw new NotFoundException(
                 $"User '{request.Id}' not found.");
@@ -114,52 +125,71 @@ public sealed class DeactivateAdminUserCommandHandler(
 
 internal static class AdminUserValidator
 {
-    private static readonly Dictionary<string, string> AllowedRoles =
-        new(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<
+        string,
+        string> AllowedRoles =
+        new(
+            StringComparer.OrdinalIgnoreCase)
         {
             ["ADMIN"] = "ADMIN",
-            ["OrgAdmin"] = "OrgAdmin",
+
+            ["ORGADMIN"] = "ORGADMIN",
+
             ["FARMER"] = "FARMER",
+
             ["OPERATOR"] = "OPERATOR",
+
             ["INSPECTOR"] = "INSPECTOR"
         };
 
     public static async Task<(
         string Email,
         string Role,
-        int? OrganizationId)> ValidateAsync(
-        IAdminRepository repository,
-        string email,
-        string role,
-        int? organizationId,
-        int? exceptUserId,
-        CancellationToken cancellationToken)
+        int? OrganizationId)>
+        ValidateAsync(
+            IAdminRepository repository,
+            string email,
+            string role,
+            int? organizationId,
+            int? exceptUserId,
+            CancellationToken cancellationToken)
     {
         var normalizedEmail =
-            email.Trim().ToLowerInvariant();
+            email
+                .Trim()
+                .ToLowerInvariant();
 
-        if (string.IsNullOrWhiteSpace(normalizedEmail))
+        if (string.IsNullOrWhiteSpace(
+                normalizedEmail))
+        {
             throw new ArgumentException(
                 "Email is required.");
+        }
 
-        if (!AllowedRoles.TryGetValue(
+        if (
+            string.IsNullOrWhiteSpace(role) ||
+            !AllowedRoles.TryGetValue(
                 role.Trim(),
                 out var normalizedRole))
         {
             throw new ArgumentException(
-                "Role must be one of: ADMIN, OrgAdmin, FARMER, OPERATOR, INSPECTOR.");
+                "Role must be one of: ADMIN, ORGADMIN, FARMER, OPERATOR, INSPECTOR.");
         }
 
-        if (await repository.EmailExistsAsync(
+        var emailExists =
+            await repository.EmailExistsAsync(
                 normalizedEmail,
                 exceptUserId,
-                cancellationToken))
+                cancellationToken);
+
+        if (emailExists)
         {
             throw new ArgumentException(
                 "Email already exists.");
         }
 
-        if (organizationId.HasValue &&
+        if (
+            organizationId.HasValue &&
             !await repository.OrganizationExistsAsync(
                 organizationId.Value,
                 cancellationToken))
@@ -168,7 +198,8 @@ internal static class AdminUserValidator
                 "Organization does not exist.");
         }
 
-        if (normalizedRole.Equals(
+        if (
+            normalizedRole.Equals(
                 "ADMIN",
                 StringComparison.OrdinalIgnoreCase))
         {

@@ -6,23 +6,77 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgriTrace.API.Controllers;
-[ApiController, Route("api/farmer/batches"), Authorize(Roles = "Farmer,Admin")]
-public sealed class FarmerBatchesController(ISender sender) : ControllerBase
+
+[ApiController]
+[Route("api/farmer/batches")]
+[Authorize(Roles = "FARMER,ADMIN")]
+public sealed class FarmerBatchesController(
+    ISender sender)
+    : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetBatches([FromQuery] int organizationId, [FromQuery] string? search,
-        [FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default) =>
-        Ok(await sender.Send(new GetFarmerBatchesQuery(organizationId, search, status, page, pageSize), ct));
+    public async Task<IActionResult> GetBatches(
+        [FromQuery] int organizationId,
+        [FromQuery] string? search,
+        [FromQuery] string? status,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
+    {
+        var result =
+            await sender.Send(
+                new GetFarmerBatchesQuery(
+                    organizationId,
+                    search,
+                    status,
+                    page,
+                    pageSize),
+                ct);
+
+        return Ok(result);
+    }
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetBatch(int id, [FromQuery] int organizationId, CancellationToken ct) =>
-        Ok(await sender.Send(new GetFarmerBatchByIdQuery(id, organizationId), ct));
+    public async Task<IActionResult> GetBatch(
+        int id,
+        [FromQuery] int organizationId,
+        CancellationToken ct)
+    {
+        var result =
+            await sender.Send(
+                new GetFarmerBatchByIdQuery(
+                    id,
+                    organizationId),
+                ct);
+
+        return Ok(result);
+    }
 
     [HttpPost]
-    public async Task<IActionResult> CreateBatch(CreateFarmerBatchRequest request, CancellationToken ct)
+    public async Task<IActionResult> CreateBatch(
+        CreateFarmerBatchRequest request,
+        CancellationToken ct)
     {
-        var result = await sender.Send(new CreateFarmerBatchCommand(request.ProductId, request.ProducerOrganizationId,
-            request.PerformedByUserId, request.HarvestDate, request.Weight, request.Location, request.HarvestNotes), ct);
-        return CreatedAtAction(nameof(GetBatch), new { id = result.BatchId, organizationId = request.ProducerOrganizationId }, result);
+        var result =
+            await sender.Send(
+                new CreateFarmerBatchCommand(
+                    request.ProductId,
+                    request.ProducerOrganizationId,
+                    request.PerformedByUserId,
+                    request.HarvestDate,
+                    request.Weight,
+                    request.Location,
+                    request.HarvestNotes),
+                ct);
+
+        return CreatedAtAction(
+            nameof(GetBatch),
+            new
+            {
+                id = result.BatchId,
+                organizationId =
+                    request.ProducerOrganizationId
+            },
+            result);
     }
 }

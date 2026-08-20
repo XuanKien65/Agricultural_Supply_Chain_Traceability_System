@@ -1,92 +1,81 @@
-export type Role =
-  | 'Admin'
-  | 'Farmer'
-  | 'Processor'
-  | 'Distributor'
-  | 'Retailer'
-  | 'Inspector'
-  | 'Consumer'
+export type UserRole =
+  | 'ADMIN'
+  | 'ORGADMIN'
+  | 'FARMER'
+  | 'OPERATOR'
+  | 'INSPECTOR'
 
-export type RegisterableRole = Exclude<Role, 'Admin' | 'Consumer'>
-
-export const REGISTERABLE_ROLES: RegisterableRole[] = [
-  'Farmer',
-  'Processor',
-  'Distributor',
-  'Retailer',
-  'Inspector',
-]
-
-export const ROLE_TO_ID: Record<RegisterableRole, number> = {
-  Farmer: 2,
-  Processor: 3,
-  Distributor: 4,
-  Retailer: 5,
-  Inspector: 6,
-}
+export type OrganizationType =
+  | 'FARM'
+  | 'PROCESSOR'
+  | 'DISTRIBUTOR'
+  | 'RETAILER'
 
 export interface AuthUser {
   id: number
-  username: string
-  fullName: string | null
+  userId?: number
+
   name: string
+  fullName: string
+
   email: string
-  role: Role
-  unitName?: string | null
+  role: UserRole
+
+  isActive?: boolean
+
   organizationId?: number | null
+  organizationName?: string | null
+
+  organizationType?:
+    | OrganizationType
+    | null
+
+  unitName?: string | null
+}
+
+export interface BackendAuthUser {
+  id?: number
+  userId?: number
+
+  name?: string
+  fullName?: string
+
+  email: string
+  role: UserRole
+
+  isActive?: boolean
+
+  organizationId?: number | null
+  organizationName?: string | null
+
+  organizationType?:
+    | OrganizationType
+    | null
 }
 
 export interface LoginPayload {
-  username: string // Accepts username or email
+  email: string
   password: string
 }
 
-export interface RegisterPayload {
-  fullName: string
-  email: string
-  username?: string
-  password: string
-  role: RegisterableRole
-  organizationId?: number | null
+export interface BackendLoginResponse {
+  accessToken: string
+  refreshToken?: string
+
+  accessTokenExpiresAt?: string
+  refreshTokenExpiresAt?: string
+
+  user: BackendAuthUser
 }
 
 export interface LoginResponse {
   accessToken: string
+  refreshToken?: string
   user: AuthUser
 }
 
-export interface ApiResponse<T> {
-  statusCode: number
-  isSuccess: boolean
-  errorMessages: string[]
-  result: T
-}
-
-export interface BackendLoginResult {
-  token: string
-  userId: number
-  username: string
-  email: string
-  fullName: string | null
-  role: Role
-  organizationId: number | null
-  expiresAt: string
-}
-
-export interface BackendRegisterResult {
-  userId: number
-  username: string
-  email: string
-  role: string
-}
-
-export interface BackendCurrentUserResult {
-  userId: number
-  username: string
-  email: string
-  fullName: string | null
-  role: Role
-  organizationId: number | null
-  status: string
-  createdAt: string
+export interface ChangePasswordPayload {
+  currentPassword: string
+  newPassword: string
+  confirmNewPassword: string
 }

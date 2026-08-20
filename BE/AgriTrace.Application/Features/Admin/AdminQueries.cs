@@ -37,22 +37,29 @@ public sealed record GetAdminRecallsQuery
 
 public sealed class GetAdminDashboardQueryHandler(
     IAdminRepository repository)
-    : IRequestHandler<GetAdminDashboardQuery, AdminDashboardDto>
+    : IRequestHandler<
+        GetAdminDashboardQuery,
+        AdminDashboardDto>
 {
     public async Task<AdminDashboardDto> Handle(
         GetAdminDashboardQuery request,
         CancellationToken cancellationToken)
     {
-        var x = await repository.GetDashboardAsync(cancellationToken);
+        var dashboard =
+            await repository.GetDashboardAsync(
+                cancellationToken);
 
         return new AdminDashboardDto(
-            x.OrganizationCount,
-            x.UserCount,
-            x.BatchCount,
-            x.RecallCount,
-            x.RecentBatches.Select(b => b.ToDto()).ToList());
+            dashboard.OrganizationCount,
+            dashboard.UserCount,
+            dashboard.BatchCount,
+            dashboard.RecallCount,
+            dashboard.RecentBatches
+                .Select(x => x.ToDto())
+                .ToList());
     }
 }
+
 
 public sealed class GetAdminRolesQueryHandler(
     IAdminRepository repository)
@@ -62,27 +69,54 @@ public sealed class GetAdminRolesQueryHandler(
 {
     private static readonly (
         string Name,
-        string Description)[] DefaultRoles =
-    [
-        ("ADMIN", "Quản trị toàn bộ hệ thống"),
-        ("OrgAdmin", "Quản trị người dùng và dữ liệu của một tổ chức"),
-        ("FARMER", "Người dùng phía nông trại / sản xuất"),
-        ("OPERATOR", "Nhân sự vận hành chuỗi cung ứng"),
-        ("INSPECTOR", "Nhân sự kiểm định chất lượng")
-    ];
+        string Description)[]
+        DefaultRoles =
+        [
+            (
+                "ADMIN",
+                "Quản trị toàn bộ hệ thống"
+            ),
 
-    public async Task<IReadOnlyList<AdminRoleDto>> Handle(
-        GetAdminRolesQuery request,
-        CancellationToken cancellationToken)
+            (
+                "ORGADMIN",
+                "Quản trị người dùng và dữ liệu của một tổ chức"
+            ),
+
+            (
+                "FARMER",
+                "Người dùng phía nông trại / sản xuất"
+            ),
+
+            (
+                "OPERATOR",
+                "Nhân sự vận hành chuỗi cung ứng"
+            ),
+
+            (
+                "INSPECTOR",
+                "Nhân sự kiểm định chất lượng"
+            )
+        ];
+
+    public async Task<
+        IReadOnlyList<AdminRoleDto>>
+        Handle(
+            GetAdminRolesQuery request,
+            CancellationToken cancellationToken)
     {
         var counts =
-            await repository.GetRoleCountsAsync(cancellationToken);
+            await repository.GetRoleCountsAsync(
+                cancellationToken);
 
-        var result = new List<AdminRoleDto>();
+        var result =
+            new List<AdminRoleDto>();
 
-        foreach (var role in DefaultRoles)
+        foreach (
+            var role in DefaultRoles)
         {
-            counts.TryGetValue(role.Name, out var count);
+            counts.TryGetValue(
+                role.Name,
+                out var count);
 
             result.Add(
                 new AdminRoleDto(
@@ -93,10 +127,12 @@ public sealed class GetAdminRolesQueryHandler(
 
         foreach (
             var role in counts.Keys.Where(
-                name => DefaultRoles.All(
-                    x => !x.Name.Equals(
-                        name,
-                        StringComparison.OrdinalIgnoreCase))))
+                name =>
+                    DefaultRoles.All(
+                        x =>
+                            !x.Name.Equals(
+                                name,
+                                StringComparison.OrdinalIgnoreCase))))
         {
             result.Add(
                 new AdminRoleDto(
@@ -109,19 +145,29 @@ public sealed class GetAdminRolesQueryHandler(
     }
 }
 
+
 public sealed class GetAdminOrganizationsQueryHandler(
     IAdminRepository repository)
     : IRequestHandler<
         GetAdminOrganizationsQuery,
         IReadOnlyList<AdminOrganizationDto>>
 {
-    public async Task<IReadOnlyList<AdminOrganizationDto>> Handle(
-        GetAdminOrganizationsQuery request,
-        CancellationToken cancellationToken) =>
-        (await repository.GetOrganizationsAsync(cancellationToken))
-        .Select(x => x.ToDto())
-        .ToList();
+    public async Task<
+        IReadOnlyList<AdminOrganizationDto>>
+        Handle(
+            GetAdminOrganizationsQuery request,
+            CancellationToken cancellationToken)
+    {
+        var organizations =
+            await repository.GetOrganizationsAsync(
+                cancellationToken);
+
+        return organizations
+            .Select(x => x.ToDto())
+            .ToList();
+    }
 }
+
 
 public sealed class GetAdminUsersQueryHandler(
     IAdminRepository repository)
@@ -129,13 +175,22 @@ public sealed class GetAdminUsersQueryHandler(
         GetAdminUsersQuery,
         IReadOnlyList<AdminUserDto>>
 {
-    public async Task<IReadOnlyList<AdminUserDto>> Handle(
-        GetAdminUsersQuery request,
-        CancellationToken cancellationToken) =>
-        (await repository.GetUsersAsync(cancellationToken))
-        .Select(x => x.ToDto())
-        .ToList();
+    public async Task<
+        IReadOnlyList<AdminUserDto>>
+        Handle(
+            GetAdminUsersQuery request,
+            CancellationToken cancellationToken)
+    {
+        var users =
+            await repository.GetUsersAsync(
+                cancellationToken);
+
+        return users
+            .Select(x => x.ToDto())
+            .ToList();
+    }
 }
+
 
 public sealed class GetAdminProductsQueryHandler(
     IAdminRepository repository)
@@ -143,13 +198,22 @@ public sealed class GetAdminProductsQueryHandler(
         GetAdminProductsQuery,
         IReadOnlyList<AdminProductDto>>
 {
-    public async Task<IReadOnlyList<AdminProductDto>> Handle(
-        GetAdminProductsQuery request,
-        CancellationToken cancellationToken) =>
-        (await repository.GetProductsAsync(cancellationToken))
-        .Select(x => x.ToDto())
-        .ToList();
+    public async Task<
+        IReadOnlyList<AdminProductDto>>
+        Handle(
+            GetAdminProductsQuery request,
+            CancellationToken cancellationToken)
+    {
+        var products =
+            await repository.GetProductsAsync(
+                cancellationToken);
+
+        return products
+            .Select(x => x.ToDto())
+            .ToList();
+    }
 }
+
 
 public sealed class GetAdminBatchesQueryHandler(
     IAdminRepository repository)
@@ -157,13 +221,22 @@ public sealed class GetAdminBatchesQueryHandler(
         GetAdminBatchesQuery,
         IReadOnlyList<AdminBatchDto>>
 {
-    public async Task<IReadOnlyList<AdminBatchDto>> Handle(
-        GetAdminBatchesQuery request,
-        CancellationToken cancellationToken) =>
-        (await repository.GetBatchesAsync(cancellationToken))
-        .Select(x => x.ToDto())
-        .ToList();
+    public async Task<
+        IReadOnlyList<AdminBatchDto>>
+        Handle(
+            GetAdminBatchesQuery request,
+            CancellationToken cancellationToken)
+    {
+        var batches =
+            await repository.GetBatchesAsync(
+                cancellationToken);
+
+        return batches
+            .Select(x => x.ToDto())
+            .ToList();
+    }
 }
+
 
 public sealed class GetAdminEventsQueryHandler(
     IAdminRepository repository)
@@ -171,13 +244,22 @@ public sealed class GetAdminEventsQueryHandler(
         GetAdminEventsQuery,
         IReadOnlyList<AdminSupplyChainEventDto>>
 {
-    public async Task<IReadOnlyList<AdminSupplyChainEventDto>> Handle(
-        GetAdminEventsQuery request,
-        CancellationToken cancellationToken) =>
-        (await repository.GetEventsAsync(cancellationToken))
-        .Select(x => x.ToDto())
-        .ToList();
+    public async Task<
+        IReadOnlyList<AdminSupplyChainEventDto>>
+        Handle(
+            GetAdminEventsQuery request,
+            CancellationToken cancellationToken)
+    {
+        var events =
+            await repository.GetEventsAsync(
+                cancellationToken);
+
+        return events
+            .Select(x => x.ToDto())
+            .ToList();
+    }
 }
+
 
 public sealed class GetAdminInspectionsQueryHandler(
     IAdminRepository repository)
@@ -185,13 +267,22 @@ public sealed class GetAdminInspectionsQueryHandler(
         GetAdminInspectionsQuery,
         IReadOnlyList<AdminInspectionDto>>
 {
-    public async Task<IReadOnlyList<AdminInspectionDto>> Handle(
-        GetAdminInspectionsQuery request,
-        CancellationToken cancellationToken) =>
-        (await repository.GetInspectionsAsync(cancellationToken))
-        .Select(x => x.ToDto())
-        .ToList();
+    public async Task<
+        IReadOnlyList<AdminInspectionDto>>
+        Handle(
+            GetAdminInspectionsQuery request,
+            CancellationToken cancellationToken)
+    {
+        var inspections =
+            await repository.GetInspectionsAsync(
+                cancellationToken);
+
+        return inspections
+            .Select(x => x.ToDto())
+            .ToList();
+    }
 }
+
 
 public sealed class GetAdminCertificatesQueryHandler(
     IAdminRepository repository)
@@ -199,13 +290,22 @@ public sealed class GetAdminCertificatesQueryHandler(
         GetAdminCertificatesQuery,
         IReadOnlyList<AdminCertificateDto>>
 {
-    public async Task<IReadOnlyList<AdminCertificateDto>> Handle(
-        GetAdminCertificatesQuery request,
-        CancellationToken cancellationToken) =>
-        (await repository.GetCertificatesAsync(cancellationToken))
-        .Select(x => x.ToDto())
-        .ToList();
+    public async Task<
+        IReadOnlyList<AdminCertificateDto>>
+        Handle(
+            GetAdminCertificatesQuery request,
+            CancellationToken cancellationToken)
+    {
+        var certificates =
+            await repository.GetCertificatesAsync(
+                cancellationToken);
+
+        return certificates
+            .Select(x => x.ToDto())
+            .ToList();
+    }
 }
+
 
 public sealed class GetAdminRecallsQueryHandler(
     IAdminRepository repository)
@@ -213,10 +313,18 @@ public sealed class GetAdminRecallsQueryHandler(
         GetAdminRecallsQuery,
         IReadOnlyList<AdminRecallDto>>
 {
-    public async Task<IReadOnlyList<AdminRecallDto>> Handle(
-        GetAdminRecallsQuery request,
-        CancellationToken cancellationToken) =>
-        (await repository.GetRecallsAsync(cancellationToken))
-        .Select(x => x.ToDto())
-        .ToList();
+    public async Task<
+        IReadOnlyList<AdminRecallDto>>
+        Handle(
+            GetAdminRecallsQuery request,
+            CancellationToken cancellationToken)
+    {
+        var recalls =
+            await repository.GetRecallsAsync(
+                cancellationToken);
+
+        return recalls
+            .Select(x => x.ToDto())
+            .ToList();
+    }
 }
