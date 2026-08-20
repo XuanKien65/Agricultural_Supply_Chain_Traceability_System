@@ -27,7 +27,7 @@ export const useAuthStore = create<AuthState>()(
         set({ status: 'loading', error: null })
         try {
           const res = await authApi.login(payload)
-          tokenStorage.set(res.accessToken)
+          tokenStorage.set(res.accessToken, res.refreshToken)
           set({ user: res.user, isAuthenticated: true, status: 'idle' })
         } catch (e) {
           const message = e instanceof Error ? e.message : 'Tài khoản hoặc mật khẩu không chính xác'
@@ -40,7 +40,7 @@ export const useAuthStore = create<AuthState>()(
         set({ status: 'loading', error: null })
         try {
           const res = await authApi.register(payload)
-          tokenStorage.set(res.accessToken)
+          tokenStorage.set(res.accessToken, res.refreshToken)
           set({ user: res.user, isAuthenticated: true, status: 'idle' })
         } catch (e) {
           const message = e instanceof Error ? e.message : 'Đăng ký không thành công'

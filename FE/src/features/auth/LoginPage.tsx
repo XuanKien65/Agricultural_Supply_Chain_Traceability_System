@@ -15,8 +15,8 @@ export function LoginPage() {
   const location = useLocation()
   const { login, status, error } = useAuthStore()
 
-  const [username, setUsername] = useState('superadmin')
-  const [password, setPassword] = useState('Admin@123456')
+  const [email, setEmail] = useState('farmer@sonlafarm.vn')
+  const [password, setPassword] = useState('P@ssw0rd123')
   const [showPassword, setShowPassword] = useState(false)
 
   const redirectTo = (location.state as LocationState)?.from?.pathname ?? '/'
@@ -24,7 +24,7 @@ export function LoginPage() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     try {
-      await login({ username, password })
+      await login({ email, password })
       navigate(redirectTo, { replace: true })
     } catch {
       /* error surfaced via store */
@@ -43,10 +43,10 @@ export function LoginPage() {
 
         <Box component="form" onSubmit={onSubmit} sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField
-            label={t('auth.usernameOrEmail', 'Tên đăng nhập hoặc Email')}
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            label={t('auth.email', 'Email')}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
             fullWidth
           />
@@ -85,7 +85,9 @@ export function LoginPage() {
           </Button>
 
           <Typography sx={{ textAlign: 'center', fontSize: 12, color: 'text.disabled' }}>
-            superadmin / Admin@123456 (Admin) | admin@agritrace.vn / Password@123
+            farmer@sonlafarm.vn · operator@mocchau.vn · inspector@agritrace.vn · admin@agritrace.vn
+            <br />
+            Mật khẩu chung: P@ssw0rd123
           </Typography>
 
           <Typography sx={{ textAlign: 'center', fontSize: 14, color: 'text.secondary' }}>

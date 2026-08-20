@@ -21,6 +21,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<RecallDataModel> Recalls => Set<RecallDataModel>();
     public DbSet<NotificationDataModel> Notifications => Set<NotificationDataModel>();
     public DbSet<BatchRelationDataModel> BatchRelations => Set<BatchRelationDataModel>();
+    public DbSet<RefreshTokenDataModel> RefreshTokens => Set<RefreshTokenDataModel>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

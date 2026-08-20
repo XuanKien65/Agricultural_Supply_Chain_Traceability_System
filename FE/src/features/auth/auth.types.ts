@@ -1,50 +1,29 @@
-export type Role =
-  | 'Admin'
-  | 'Farmer'
-  | 'Processor'
-  | 'Distributor'
-  | 'Retailer'
-  | 'Inspector'
-  | 'Consumer'
+export type Role = 'ADMIN' | 'ORGADMIN' | 'FARMER' | 'OPERATOR' | 'INSPECTOR'
 
-export type RegisterableRole = Exclude<Role, 'Admin' | 'Consumer'>
+export type RegisterableRole = Exclude<Role, 'ADMIN' | 'ORGADMIN'>
 
-export const REGISTERABLE_ROLES: RegisterableRole[] = [
-  'Farmer',
-  'Processor',
-  'Distributor',
-  'Retailer',
-  'Inspector',
-]
-
-export const ROLE_TO_ID: Record<RegisterableRole, number> = {
-  Farmer: 2,
-  Processor: 3,
-  Distributor: 4,
-  Retailer: 5,
-  Inspector: 6,
-}
+export const REGISTERABLE_ROLES: RegisterableRole[] = ['FARMER', 'OPERATOR', 'INSPECTOR']
 
 export interface AuthUser {
   id: number
-  username: string
   fullName: string | null
-  name: string
   email: string
   role: Role
-  unitName?: string | null
-  organizationId?: number | null
+  organizationId: number | null
+  organizationName: string | null
+  organizationType: string | null
+  /** Tên hiển thị — fallback về email khi chưa có họ tên. */
+  name: string
 }
 
 export interface LoginPayload {
-  username: string // Accepts username or email
+  email: string
   password: string
 }
 
 export interface RegisterPayload {
   fullName: string
   email: string
-  username?: string
   password: string
   role: RegisterableRole
   organizationId?: number | null
@@ -52,6 +31,7 @@ export interface RegisterPayload {
 
 export interface LoginResponse {
   accessToken: string
+  refreshToken: string
   user: AuthUser
 }
 
@@ -62,31 +42,20 @@ export interface ApiResponse<T> {
   result: T
 }
 
+export interface BackendAuthUserResult {
+  userId: number
+  fullName: string | null
+  email: string
+  role: Role
+  organizationId: number | null
+  organizationName: string | null
+  organizationType: string | null
+}
+
 export interface BackendLoginResult {
-  token: string
-  userId: number
-  username: string
-  email: string
-  fullName: string | null
-  role: Role
-  organizationId: number | null
-  expiresAt: string
-}
-
-export interface BackendRegisterResult {
-  userId: number
-  username: string
-  email: string
-  role: string
-}
-
-export interface BackendCurrentUserResult {
-  userId: number
-  username: string
-  email: string
-  fullName: string | null
-  role: Role
-  organizationId: number | null
-  status: string
-  createdAt: string
+  accessToken: string
+  accessTokenExpiresAt: string
+  refreshToken: string
+  refreshTokenExpiresAt: string
+  user: BackendAuthUserResult
 }

@@ -1,5 +1,6 @@
 using AgriTrace.Application.Contracts;
 using AgriTrace.Application.Common.Exceptions;
+using AgriTrace.Domain.Common;
 using AgriTrace.Domain.Entities;
 using AgriTrace.Domain.Interfaces;
 using MediatR;
@@ -37,7 +38,7 @@ public sealed class AppendSupplyChainEventCommandHandler(IBatchRepository batche
             sb.Append(eventType).Append('|');
             sb.Append(request.OrganizationId).Append('|');
             sb.Append(request.PerformedByUserId).Append('|');
-            sb.Append(eventTime.ToString("O")).Append('|');
+            sb.Append(HashCanonical.Timestamp(eventTime)).Append('|');
             sb.Append(request.AdditionalData ?? string.Empty).Append('|');
             sb.Append(request.Location ?? string.Empty);
 

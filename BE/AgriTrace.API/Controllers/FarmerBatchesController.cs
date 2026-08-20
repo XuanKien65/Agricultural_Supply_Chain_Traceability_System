@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgriTrace.API.Controllers;
-[ApiController, Route("api/farmer/batches"), Authorize(Roles = "Farmer,Admin")]
+[ApiController, Route("api/farmer/batches"), Authorize(Roles = "FARMER,ADMIN")]
 public sealed class FarmerBatchesController(ISender sender) : ControllerBase
 {
     [HttpGet]

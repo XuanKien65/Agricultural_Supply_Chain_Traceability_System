@@ -231,7 +231,7 @@ public sealed class BatchRepository(ApplicationDbContext db) : IBatchRepository
                     sb.Append(e.EventType).Append('|');
                     sb.Append(meta.OrgId).Append('|');
                     sb.Append(meta.UserId).Append('|');
-                    sb.Append(e.EventTime.ToString("O")).Append('|');
+                    sb.Append(HashCanonical.Timestamp(e.EventTime)).Append('|');
                     sb.Append(e.AdditionalData ?? string.Empty).Append('|');
                     sb.Append(e.Location ?? string.Empty);
 
@@ -267,7 +267,6 @@ public sealed class BatchRepository(ApplicationDbContext db) : IBatchRepository
         x.ParentBatchId, x.RootBatchId, x.QRCode, x.CreatedAt,
         x.Events.Select(e => new SupplyChainEvent(e.Id, e.BatchId, e.EventType, e.OrganizationId, e.UserId,
             e.EventData, e.Location, e.PreviousHash, e.CurrentHash, e.CreatedAt)));
-
 
     public async Task CreateBatchRelationAsync(int sourceBatchId, int targetBatchId, string relationType, decimal? quantity, CancellationToken ct = default)
     {
@@ -338,5 +337,5 @@ public sealed class BatchRepository(ApplicationDbContext db) : IBatchRepository
             .ToListAsync(ct);
 
         return new LineageResult(batches, edges);
-    }    
+    }
 }
