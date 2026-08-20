@@ -1,5 +1,13 @@
 export type Role = 'ADMIN' | 'ORGADMIN' | 'FARMER' | 'OPERATOR' | 'INSPECTOR'
 
+export const ROLE_LABELS: Record<Role, string> = {
+  ADMIN: 'Quản trị viên',
+  ORGADMIN: 'Quản trị tổ chức',
+  FARMER: 'Nông dân',
+  OPERATOR: 'Đơn vị vận hành',
+  INSPECTOR: 'Kiểm định viên',
+}
+
 export type RegisterableRole = Exclude<Role, 'ADMIN' | 'ORGADMIN'>
 
 export const REGISTERABLE_ROLES: RegisterableRole[] = ['FARMER', 'OPERATOR', 'INSPECTOR']

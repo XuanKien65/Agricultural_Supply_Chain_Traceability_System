@@ -15,8 +15,8 @@ export function LoginPage() {
   const location = useLocation()
   const { login, status, error } = useAuthStore()
 
-  const [email, setEmail] = useState('farmer@sonlafarm.vn')
-  const [password, setPassword] = useState('P@ssw0rd123')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
   const redirectTo = (location.state as LocationState)?.from?.pathname ?? '/'
@@ -83,12 +83,6 @@ export function LoginPage() {
           <Button type="submit" variant="contained" loading={status === 'loading'} fullWidth>
             {t('auth.login')}
           </Button>
-
-          <Typography sx={{ textAlign: 'center', fontSize: 12, color: 'text.disabled' }}>
-            farmer@sonlafarm.vn · operator@mocchau.vn · inspector@agritrace.vn · admin@agritrace.vn
-            <br />
-            Mật khẩu chung: P@ssw0rd123
-          </Typography>
 
           <Typography sx={{ textAlign: 'center', fontSize: 14, color: 'text.secondary' }}>
             {t('auth.noAccount')}{' '}

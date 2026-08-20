@@ -3,6 +3,13 @@ import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAx
 import { PageHeader } from '@/components/ui/PageHeader'
 import { useBatchDistribution } from '../analytics.queries'
 
+const ORG_TYPE_LABELS: Record<string, string> = {
+  FARM: 'Nông trại',
+  PROCESSOR: 'Đơn vị sơ chế',
+  DISTRIBUTOR: 'Nhà phân phối',
+  RETAILER: 'Đại lý bán lẻ',
+}
+
 export function BatchDistributionPage() {
   const { data, isLoading, isError } = useBatchDistribution()
   const items = data?.items ?? []
@@ -40,7 +47,7 @@ export function BatchDistributionPage() {
           {items.map((it) => (
             <Box key={it.organizationId} sx={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 2, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
               <Typography sx={{ fontWeight: 700 }}>{it.organizationName}</Typography>
-              <Typography color="text.secondary">{it.organizationType}</Typography>
+              <Typography color="text.secondary">{ORG_TYPE_LABELS[it.organizationType] ?? it.organizationType}</Typography>
               <Typography>{it.batchCount} lô</Typography>
               <Typography>{it.totalQuantity.toLocaleString('vi-VN')}</Typography>
             </Box>

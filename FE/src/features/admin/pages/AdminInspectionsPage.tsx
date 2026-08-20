@@ -462,7 +462,7 @@ export function AdminInspectionsPage() {
     <>
       <PageHeader
         title="Quản lý kiểm định"
-        description="Kiểm định chỉ được tạo bởi người dùng có vai trò INSPECTOR."
+        description="Chỉ Kiểm định viên (Inspector) mới có thể tạo kết quả kiểm định."
         search={search}
         onSearchChange={
           setSearch

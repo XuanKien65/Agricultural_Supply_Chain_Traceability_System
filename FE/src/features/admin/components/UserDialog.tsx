@@ -200,7 +200,7 @@ export function UserDialog({
               event.target.value,
             )
           }
-          helperText="Nếu nhập mật khẩu, Backend sẽ hash trước khi lưu vào PasswordHash."
+          helperText="Để trống nếu không muốn thay đổi mật khẩu."
           fullWidth
         />
 

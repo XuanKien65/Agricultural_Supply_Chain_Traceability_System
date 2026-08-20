@@ -7,12 +7,12 @@ import { LogoutRounded, DashboardRounded, Inventory2Rounded, TimelineRounded, Fa
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/features/auth/auth.store'
-import { supportedLocales } from '@/lib/i18n'
+import { ROLE_LABELS } from '@/features/auth/auth.types'
 import { PageLoader } from '@/components/ui/PageLoader'
 
 /** Shell chung cho các trang đã đăng nhập, không phải Admin (Admin có AdminLayout riêng). */
 export function MainLayout() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
 
@@ -85,20 +85,6 @@ export function MainLayout() {
            * END NEW CODE
            * ========================================== */}
 
-          {/* Ngôn ngữ */}
-          <select
-            aria-label="Language"
-            value={i18n.resolvedLanguage}
-            onChange={(e) => void i18n.changeLanguage(e.target.value)}
-            style={{ height: 32, borderRadius: 6, border: '1px solid #CBD5E1', padding: '0 8px', fontSize: 12, backgroundColor: '#FFF' }}
-          >
-            {supportedLocales.map((l) => (
-              <option key={l} value={l}>
-                {l.toUpperCase()}
-              </option>
-            ))}
-          </select>
-
           {/* Thông tin user & Đăng xuất */}
           {user && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -107,7 +93,7 @@ export function MainLayout() {
               </Avatar>
               <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
                 <Typography sx={{ fontSize: 13, fontWeight: 700, lineHeight: 1.2 }}>{user.name}</Typography>
-                <Chip label={user.role} size="small" sx={{ height: 18, fontSize: 10, fontWeight: 700, bgcolor: 'primary.50', color: 'primary.main' }} />
+                <Chip label={ROLE_LABELS[user.role]} size="small" sx={{ height: 18, fontSize: 10, fontWeight: 700, bgcolor: 'primary.50', color: 'primary.main' }} />
               </Box>
             </Box>
           )}

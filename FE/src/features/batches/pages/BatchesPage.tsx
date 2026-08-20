@@ -82,7 +82,7 @@ function FarmerBatchesTable() {
             </MenuItem>
           ))}
         </TextField>
-        <Tooltip title="Backend hiện chưa hỗ trợ lọc theo sản phẩm/ngày tạo ở server — bộ lọc này chỉ áp dụng trên các lô đã tải ở trang hiện tại.">
+        <Tooltip title="Bộ lọc sản phẩm áp dụng trên danh sách đã tải ở trang hiện tại.">
           <InfoOutlined fontSize="small" sx={{ color: 'text.disabled', alignSelf: 'center' }} />
         </Tooltip>
       </Paper>
@@ -158,12 +158,11 @@ function OperatorQuickLookup() {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <PageHeader
         title="Tra Cứu Lô Hàng"
-        description="Tài khoản OPERATOR/INSPECTOR chưa có API danh sách lô dùng chung — quét QR hoặc nhập mã lô để mở nhanh."
+        description="Quét mã QR trên bao bì hoặc nhập ID lô hàng để mở nhanh."
       />
 
       <Alert severity="info">
-        Backend hiện chỉ hỗ trợ danh sách lô tìm kiếm/lọc cho vai trò FARMER. Với vai trò của bạn, hãy quét QR trên
-        bao bì/nhãn lô hàng hoặc nhập ID lô để mở trực tiếp.
+        Quét mã QR trên bao bì/nhãn lô hàng hoặc nhập ID lô để mở trực tiếp thông tin lô.
       </Alert>
 
       <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 3, display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>

@@ -220,7 +220,7 @@ export function AdminUsersPage() {
         })
 
         setMessage(
-          'Đã cập nhật người dùng trong database.',
+          'Đã cập nhật người dùng.',
         )
       } else {
         await createUser.mutateAsync(
@@ -228,7 +228,7 @@ export function AdminUsersPage() {
         )
 
         setMessage(
-          'Đã tạo người dùng trong database.',
+          'Đã tạo người dùng mới.',
         )
       }
 
@@ -409,7 +409,7 @@ export function AdminUsersPage() {
     <>
       <PageHeader
         title="Quản lý người dùng"
-        description="CRUD Users thật qua API; tạo/sửa sẽ lưu SQL Server nên F5 không mất dữ liệu."
+        description="Quản lý tài khoản người dùng trong hệ thống."
         search={search}
         onSearchChange={
           setSearch

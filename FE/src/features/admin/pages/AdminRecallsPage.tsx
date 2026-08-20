@@ -307,7 +307,7 @@ export function AdminRecallsPage() {
     <>
       <PageHeader
         title="Cảnh báo thu hồi"
-        description="CRUD bảng Recalls."
+        description="Quản lý các lệnh thu hồi sản phẩm."
         search={search}
         onSearchChange={
           setSearch

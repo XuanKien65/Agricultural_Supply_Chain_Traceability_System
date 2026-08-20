@@ -106,7 +106,7 @@ export function AdminDashboardPage() {
     <>
       <PageHeader
         title="Tổng quan hệ thống"
-        description="Dữ liệu thật từ SQL Server theo cấu trúc BE/docs/Database.md."
+        description="Tổng quan số liệu toàn hệ thống."
       />
 
       <Box

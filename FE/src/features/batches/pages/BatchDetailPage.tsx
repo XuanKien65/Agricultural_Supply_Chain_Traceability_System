@@ -215,8 +215,7 @@ export function BatchDetailPage() {
           Ảnh Lô Hàng
         </Typography>
         <Alert severity="info" sx={{ mb: 2 }}>
-          Backend hiện chỉ có API tải ảnh lên, chưa có API đọc lại — ảnh dưới đây chỉ hiển thị trong phiên làm việc
-          này, sẽ mất khi tải lại trang.
+          Ảnh hiển thị trong phiên làm việc hiện tại.
         </Alert>
         <Button component="label" variant="outlined" startIcon={<AddPhotoAlternateRounded />} disabled={upload.isPending} sx={{ mb: 2 }}>
           {upload.isPending ? 'Đang tải lên…' : 'Tải ảnh lên'}

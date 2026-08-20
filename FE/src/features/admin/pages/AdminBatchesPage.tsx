@@ -227,7 +227,7 @@ export function AdminBatchesPage() {
         setMessage('Đã cập nhật lô hàng.')
       } else {
         await crud.create.mutateAsync(payload)
-        setMessage('Đã thêm lô hàng vào database.')
+        setMessage('Đã thêm lô hàng mới.')
       }
 
       setOpen(false)
@@ -391,7 +391,7 @@ export function AdminBatchesPage() {
     <>
       <PageHeader
         title="Quản lý lô hàng"
-        description="CRUD bảng Batches."
+        description="Quản lý toàn bộ lô hàng trong hệ thống."
         search={search}
         onSearchChange={
           setSearch

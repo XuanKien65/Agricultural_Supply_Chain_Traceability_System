@@ -125,9 +125,7 @@ export function RecordEventPage() {
 
             {eligibleTypes.length === 0 && (
               <Alert severity="info">
-                Vai trò/tổ chức của bạn ({user?.organizationType ?? user?.role ?? '—'}) không có loại sự kiện nào để
-                ghi nhận ở đây. Sơ chế/Đóng gói/Vận chuyển/Nhận hàng chỉ dành cho tài khoản OPERATOR thuộc tổ chức
-                PROCESSOR/DISTRIBUTOR/RETAILER.
+                Tài khoản của bạn hiện không có công đoạn nào để ghi nhận cho lô hàng này.
               </Alert>
             )}
 

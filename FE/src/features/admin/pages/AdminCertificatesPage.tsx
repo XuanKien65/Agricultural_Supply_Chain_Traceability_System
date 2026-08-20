@@ -309,7 +309,7 @@ export function AdminCertificatesPage() {
     <>
       <PageHeader
         title="Quản lý chứng nhận"
-        description="CRUD bảng Certificates."
+        description="Quản lý chứng nhận tiêu chuẩn đã cấp cho lô hàng."
         search={search}
         onSearchChange={
           setSearch

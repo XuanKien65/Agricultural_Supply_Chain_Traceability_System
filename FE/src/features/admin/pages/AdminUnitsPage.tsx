@@ -258,7 +258,7 @@ export function AdminUnitsPage() {
     <>
       <PageHeader
         title="Quản lý tổ chức"
-        description="CRUD bảng Organizations."
+        description="Quản lý các tổ chức tham gia chuỗi cung ứng."
         search={search}
         onSearchChange={
           setSearch

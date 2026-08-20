@@ -266,7 +266,7 @@ export function AdminEventsPage() {
     <>
       <PageHeader
         title="Chuỗi sự kiện"
-        description="SupplyChainEvents chỉ thêm mới và xem lịch sử."
+        description="Sự kiện chuỗi cung ứng chỉ được thêm mới, không thể chỉnh sửa hay xoá."
         search={search}
         onSearchChange={
           setSearch

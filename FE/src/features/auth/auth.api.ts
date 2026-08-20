@@ -50,7 +50,7 @@ export const authApi = {
    * cho tới khi backend bổ sung. Giữ lại để UI đăng ký compile được.
    */
   async register(_payload: RegisterPayload): Promise<LoginResponse> {
-    throw new Error('Chức năng đăng ký chưa được backend hỗ trợ.')
+    throw new Error('Chức năng đăng ký hiện chưa khả dụng. Vui lòng liên hệ quản trị viên để được cấp tài khoản.')
   },
 
   /**

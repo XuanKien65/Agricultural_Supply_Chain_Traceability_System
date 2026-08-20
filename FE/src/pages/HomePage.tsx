@@ -18,6 +18,7 @@ import {
   Camera,
 } from 'lucide-react'
 import { useAuthStore } from '@/features/auth/auth.store'
+import { ROLE_LABELS } from '@/features/auth/auth.types'
 
 // Dữ liệu các lô hàng mẫu để người dùng thử nghiệm nhanh
 const SAMPLE_BATCHES = [
@@ -128,7 +129,7 @@ export function HomePage() {
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs sm:text-sm font-semibold hover:bg-emerald-100 transition shadow-sm"
               >
                 <LayoutDashboard className="w-4 h-4" />
-                <span>Bảng điều khiển ({user.name || user.role})</span>
+                <span>Bảng điều khiển ({user.name || ROLE_LABELS[user.role]})</span>
               </Link>
             ) : (
               <Link

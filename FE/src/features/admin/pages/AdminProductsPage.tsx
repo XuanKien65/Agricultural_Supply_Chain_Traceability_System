@@ -260,7 +260,7 @@ export function AdminProductsPage() {
         )
 
         setMessage(
-          'Đã thêm sản phẩm vào database.',
+          'Đã thêm sản phẩm mới.',
         )
       }
 
