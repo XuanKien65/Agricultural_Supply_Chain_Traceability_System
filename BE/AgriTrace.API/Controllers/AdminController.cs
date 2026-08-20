@@ -1,6 +1,8 @@
-﻿using AgriTrace.API.Models;
+using AgriTrace.API.Models;
 using AgriTrace.Application.Features.Admin;
+using AgriTrace.Domain.Entities;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,6 +10,7 @@ namespace AgriTrace.API.Controllers;
 
 [ApiController]
 [Route("api/admin")]
+[Authorize(Roles = "ADMIN")]
 public sealed class AdminController(
     ISender sender)
     : ControllerBase

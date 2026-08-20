@@ -1,8 +1,60 @@
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
-import { Badge } from '/Download/Agricultural_Supply_Chain_Traceability_System/FE/src/components/ui/badge.tsx'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '/Download/Agricultural_Supply_Chain_Traceability_System/FE/src/components/ui/card.tsx'
-import { CheckCircle2, MapPin, Calendar, AlertTriangle, QrCode } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { MapPin, Calendar, AlertTriangle, QrCode, ShieldCheck } from 'lucide-react'
+import { http } from '@/lib/api/http'
+import { EVENT_TYPE_LABELS, type EventType } from '@/features/events/events.types'
+
+const EVENT_ICONS: Record<string, string> = {
+  HARVEST: '🌾',
+  PROCESS: '⚙️',
+  PACKAGE: '📦',
+  TRANSPORT: '🚚',
+  DISTRIBUTE: '🏢',
+  RETAIL: '🛒',
+}
+
+interface PublicTraceResponse {
+  batch: {
+    id: number
+    productName: string
+    productUnit?: string | null
+    producerOrganizationName: string
+    qrCode: string
+    harvestDate?: string | null
+    weight: number
+    status: string
+    createdAt: string
+  }
+  events: Array<{
+    id: number
+    eventType: string
+    eventTime: string
+    organizationName?: string | null
+    performedByUserName?: string | null
+    location?: string | null
+    additionalData?: string | null
+    previousHash?: string | null
+    currentHash: string
+  }>
+  inspections: Array<{
+    id: number
+    inspectorOrganizationName?: string | null
+    result?: string | null
+    inspectionDate?: string | null
+    notes?: string | null
+  }>
+  certificates: Array<{
+    id: number
+    certificateType?: string | null
+    issuingOrganization?: string | null
+    fileUrl?: string | null
+    issuedDate?: string | null
+    expirationDate?: string | null
+  }>
+  hashChainValid: boolean
+}
 
 /**
  * TracePublicPage - Trang tra cứu công khai cho Consumer
@@ -13,97 +65,25 @@ import { CheckCircle2, MapPin, Calendar, AlertTriangle, QrCode } from 'lucide-re
 export function TracePublicPage() {
   const { batchId } = useParams()
 
-  // NEW CODE - Fetch public batch trace data
-  const { data: batchTrace, isLoading } = useQuery({
+  const { data: traceData, isLoading, isError } = useQuery({
     queryKey: ['trace', batchId],
     queryFn: async () => {
-      // const response = await traceService.getPublicBatchTrace(batchId)
-      // return response
-      return {
-        batchId: batchId,
-        product: 'Dâu tây tươi',
-        category: 'Trái cây',
-        harvestDate: '2024-01-15',
-        sourceLocation: 'Nông trại ABC, Đà Lạt, Lâm Đồng',
-        coordinates: { latitude: 11.94, longitude: 108.44 },
-        certifications: ['VietGAP', 'Organic'],
-        status: 'Active',
-        isRecalled: false,
-        recallReason: null,
-        timeline: [
-          {
-            id: 'E1',
-            eventType: 'Harvest',
-            displayName: 'Thu hoạch',
-            timestamp: '2024-01-15 08:00',
-            location: 'Nông trại ABC, Đà Lạt',
-            actor: 'Nông dân Nguyễn Văn A',
-            description: 'Lô hàng được thu hoạch',
-            icon: '🌾',
-          },
-          {
-            id: 'E2',
-            eventType: 'Inspection',
-            displayName: 'Kiểm định Chất lượng',
-            timestamp: '2024-01-15 10:30',
-            location: 'Nông trại ABC',
-            actor: 'Đội QC Nông trại',
-            description: 'Lô hàng đạt tiêu chuẩn chất lượng',
-            icon: '✓',
-            result: 'Pass',
-          },
-          {
-            id: 'E3',
-            eventType: 'Processing',
-            displayName: 'Sơ chế & Đóng gói',
-            timestamp: '2024-01-15 14:00',
-            location: 'Nhà máy Sơ chế XYZ, Đà Lạt',
-            actor: 'Công ty Sơ chế XYZ',
-            description: 'Lô hàng được rửa sạch, phân loại và đóng gói',
-            icon: '📦',
-          },
-          {
-            id: 'E4',
-            eventType: 'Transport',
-            displayName: 'Vận chuyển',
-            timestamp: '2024-01-15 18:00',
-            location: 'Kho lạnh - Điểm X, TP.HCM',
-            actor: 'Công ty Vận tải ABC',
-            description: 'Lô hàng vận chuyển bằng xe lạnh, nhiệt độ 5°C',
-            icon: '🚚',
-            temperature: '5°C',
-            duration: '6 giờ',
-          },
-          {
-            id: 'E5',
-            eventType: 'Distribution',
-            displayName: 'Phân phối',
-            timestamp: '2024-01-16 08:00',
-            location: 'Kho Phân phối DEF, TP.HCM',
-            actor: 'Công ty Phân phối DEF',
-            description: 'Lô hàng tiếp nhận tại kho phân phối',
-            icon: '🏢',
-          },
-          {
-            id: 'E6',
-            eventType: 'Retail',
-            displayName: 'Bán lẻ',
-            timestamp: '2024-01-16 12:00',
-            location: 'Siêu thị GHI, Quận 1, TP.HCM',
-            actor: 'Siêu thị GHI',
-            description: 'Lô hàng được bày bán tại kệ siêu thị',
-            icon: '🛒',
-          },
-        ],
+      if (!batchId) throw new Error('Mã lô hàng không hợp lệ')
+      const res = await http.get<{ isSuccess: boolean; result: PublicTraceResponse }>(`/trace/${batchId}`)
+      if (res.data && res.data.result) {
+        return res.data.result
       }
+      throw new Error('Không có dữ liệu tra cứu')
     },
+    enabled: Boolean(batchId),
+    retry: 1,
   })
 
   if (isLoading)
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin mb-4">
+          <div className="animate-spin mb-4 inline-block">
             <QrCode className="w-12 h-12 text-green-600" />
           </div>
           <p className="text-lg font-semibold text-gray-700">Đang tải thông tin sản phẩm...</p>
@@ -111,83 +91,108 @@ export function TracePublicPage() {
       </div>
     )
 
-  if (!batchTrace)
+  if (isError || !traceData)
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
-        <Card className="max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
           <CardContent className="text-center py-8">
-            <AlertTriangle className="w-12 h-12 text-orange-600 mx-auto mb-4" />
+            <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
             <h2 className="text-xl font-bold mb-2">Không tìm thấy sản phẩm</h2>
-            <p className="text-gray-600">Mã lô hàng {batchId} không tồn tại trong hệ thống.</p>
+            <p className="text-gray-600">Mã lô hàng #{batchId} không tồn tại hoặc chưa có dữ liệu công khai.</p>
             <p className="text-sm text-gray-500 mt-4">Vui lòng kiểm tra lại mã QR hoặc liên hệ nhà cung cấp.</p>
           </CardContent>
         </Card>
       </div>
     )
 
-  // NEW CODE - Mobile-optimized public trace UI
+  const { batch, events, inspections, certificates, hashChainValid } = traceData
+  const isRecalled = batch.status === 'RECALLED' || batch.status === 'Recalled'
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-4 px-4 sm:py-8 sm:px-6">
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* NEW CODE - Product header card */}
-        <Card className="bg-white shadow-lg">
+        {/* Product header card */}
+        <Card className="bg-white shadow-lg overflow-hidden">
           <CardHeader className="bg-gradient-to-r from-green-600 to-blue-600 text-white">
             <div className="flex justify-between items-start">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold">{batchTrace.product}</h1>
-                <p className="text-green-100">{batchTrace.category}</p>
-                <Badge className="mt-2 bg-green-200 text-green-900">Mã lô: {batchTrace.batchId}</Badge>
+                <h1 className="text-2xl sm:text-3xl font-bold">{batch.productName}</h1>
+                <p className="text-green-100 mt-1">Sản xuất bởi: {batch.producerOrganizationName}</p>
+                <div className="flex gap-2 mt-2">
+                  <Badge className="bg-green-200 text-green-900 border-none">Mã lô #{batch.id}</Badge>
+                  {hashChainValid && (
+                    <Badge className="bg-blue-200 text-blue-900 border-none flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3" /> Hash Chain Hợp lệ
+                    </Badge>
+                  )}
+                </div>
               </div>
-              {batchTrace.isRecalled && (
-                <div className="bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-bold">
-                  <AlertTriangle className="w-4 h-4 inline mr-1" />
-                  CẢN BÁO
+              {isRecalled && (
+                <div className="bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center">
+                  <AlertTriangle className="w-4 h-4 mr-1" />
+                  CẢNH BÁO THU HỒI
                 </div>
               )}
             </div>
           </CardHeader>
-          <CardContent className="pt-6 space-y-4">
-            {/* NEW CODE - Product certifications */}
-            <div>
-              <p className="text-sm text-gray-600 mb-2">Chứng nhận & Tiêu chuẩn</p>
-              <div className="flex flex-wrap gap-2">
-                {batchTrace.certifications?.map((cert: string) => (
-                  <Badge key={cert} variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                    ✓ {cert}
-                  </Badge>
-                ))}
-              </div>
-            </div>
 
-            {/* NEW CODE - Source farm info */}
+          <CardContent className="pt-6 space-y-4">
+            {/* Certifications */}
+            {certificates && certificates.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-2">Chứng nhận & Tiêu chuẩn</p>
+                <div className="flex flex-wrap gap-2">
+                  {certificates.map((cert) => (
+                    <Badge key={cert.id} variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      ✓ {cert.certificateType ?? 'Chứng nhận chất lượng'} ({cert.issuingOrganization ?? 'Cơ quan cấp'})
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Source farm info */}
             <div className="bg-blue-50 p-4 rounded-lg">
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-blue-600 flex-shrink-0 mt-1" />
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-900">Địa điểm Sản xuất</p>
-                  <p className="text-sm text-gray-600">{batchTrace.sourceLocation}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Tọa độ: {batchTrace.coordinates.latitude}, {batchTrace.coordinates.longitude}
-                  </p>
+                  <p className="font-semibold text-gray-900">Đơn vị Sản xuất</p>
+                  <p className="text-sm text-gray-600">{batch.producerOrganizationName}</p>
+                  <p className="text-xs text-gray-500 mt-1">Mã QR: {batch.qrCode}</p>
                 </div>
               </div>
             </div>
 
-            {/* NEW CODE - Harvest date */}
-            <div className="bg-amber-50 p-4 rounded-lg">
-              <div className="flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-amber-600" />
-                <div>
-                  <p className="font-semibold text-gray-900">Ngày Thu hoạch</p>
-                  <p className="text-sm text-gray-600">{new Date(batchTrace.harvestDate).toLocaleDateString('vi-VN')}</p>
+            {/* Harvest date & weight */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-amber-50 p-4 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-5 h-5 text-amber-600" />
+                  <div>
+                    <p className="font-semibold text-gray-900 text-sm">Ngày Thu hoạch</p>
+                    <p className="text-sm text-gray-600">
+                      {batch.harvestDate ? new Date(batch.harvestDate).toLocaleDateString('vi-VN') : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-emerald-50 p-4 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <QrCode className="w-5 h-5 text-emerald-600" />
+                  <div>
+                    <p className="font-semibold text-gray-900 text-sm">Khối lượng</p>
+                    <p className="text-sm text-gray-600">
+                      {batch.weight} {batch.productUnit ?? 'kg'}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* NEW CODE - Recall warning (if applicable) */}
-        {batchTrace.isRecalled && (
+        {/* Recall warning if applicable */}
+        {isRecalled && (
           <Card className="border-red-300 bg-red-50">
             <CardHeader className="border-b border-red-200">
               <CardTitle className="text-red-900 flex items-center gap-2">
@@ -196,99 +201,90 @@ export function TracePublicPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-4 space-y-2">
-              <p className="text-red-900 font-semibold">{batchTrace.recallReason}</p>
-              <p className="text-sm text-red-800">
-                Sản phẩm này đã được thu hồi khỏi thị trường. Nếu bạn đã mua sản phẩm này, vui lòng:
-              </p>
-              <ul className="text-sm text-red-800 space-y-1 ml-4 list-disc">
-                <li>Dừng sử dụng ngay lập tức</li>
-                <li>Liên hệ với nhà bán lẻ để hoàn tiền hoặc thay thế</li>
-                <li>Tư vấn tìm kiếm nếu có triệu chứng bất thường</li>
-              </ul>
+              <p className="text-red-900 font-semibold">Lô hàng này đã có quyết định THU HỒI từ cơ quan quản lý.</p>
+              <p className="text-sm text-red-800">Vui lòng dừng sử dụng ngay và liên hệ điểm bán để được trợ giúp.</p>
             </CardContent>
           </Card>
         )}
 
-        {/* NEW CODE - Supply chain timeline (vertical layout for mobile) */}
+        {/* Inspections section */}
+        {inspections && inspections.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Kết quả Kiểm định Chất lượng</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {inspections.map((insp) => (
+                <div key={insp.id} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
+                  <div>
+                    <p className="font-medium text-sm">{insp.inspectorOrganizationName ?? 'Đơn vị kiểm định'}</p>
+                    <p className="text-xs text-gray-500">{insp.notes ?? 'Không có ghi chú'}</p>
+                  </div>
+                  <Badge className={insp.result === 'Pass' ? 'bg-green-600' : 'bg-red-600'}>
+                    {insp.result ?? 'Đạt'}
+                  </Badge>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Supply chain timeline */}
         <Card>
           <CardHeader>
             <CardTitle>Lộ trình Chuỗi cung ứng</CardTitle>
-            <CardDescription>Toàn bộ hành trình từ nông trại đến tay bạn</CardDescription>
+            <CardDescription>Toàn bộ hành trình minh bạch từ nông trại đến người tiêu dùng</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="relative">
-              {/* Timeline line */}
               <div className="absolute left-6 top-0 bottom-0 w-1 bg-gradient-to-b from-green-400 to-blue-400" />
-
-              {/* Timeline events */}
               <div className="space-y-6">
-                {batchTrace.timeline.map((event: any, index: number) => (
-                  <div key={event.id} className="relative pl-20">
-                    {/* Timeline dot */}
-                    <div className="absolute left-0 top-1 w-12 h-12 bg-white border-4 border-green-400 rounded-full flex items-center justify-center text-lg">
-                      {event.icon}
-                    </div>
+                {events && events.length > 0 ? (
+                  events.map((event) => {
+                    const label = EVENT_TYPE_LABELS[event.eventType as EventType] ?? event.eventType
+                    const icon = EVENT_ICONS[event.eventType] ?? '📍'
 
-                    {/* Event card */}
-                    <div className="bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-bold text-gray-900">{event.displayName}</h3>
-                        {event.result && (
-                          <Badge className="bg-green-100 text-green-800">
-                            <CheckCircle2 className="w-3 h-3 mr-1" />
-                            {event.result}
-                          </Badge>
-                        )}
-                      </div>
-
-                      <p className="text-sm text-gray-600 mb-3">{event.description}</p>
-
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-500" />
-                          <span className="text-gray-700">{event.timestamp}</span>
+                    return (
+                      <div key={event.id} className="relative pl-20">
+                        <div className="absolute left-0 top-1 w-12 h-12 bg-white border-4 border-green-400 rounded-full flex items-center justify-center text-lg">
+                          {icon}
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-gray-500" />
-                          <span className="text-gray-700">{event.location}</span>
-                        </div>
-
-                        <div className="text-gray-600 italic">Được thực hiện bởi: {event.actor}</div>
-
-                        {event.temperature && (
-                          <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-900">
-                            🌡️ Nhiệt độ bảo quản: {event.temperature} | Thời gian: {event.duration}
+                        <div className="bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition space-y-1">
+                          <div className="flex justify-between items-start">
+                            <h3 className="font-bold text-gray-900">{label}</h3>
+                            <span className="text-xs text-gray-500">
+                              {new Date(event.eventTime).toLocaleString('vi-VN')}
+                            </span>
                           </div>
-                        )}
+                          <p className="text-sm text-gray-700">
+                            <strong>Thực hiện:</strong> {event.organizationName ?? 'N/A'}{' '}
+                            {event.performedByUserName ? `(${event.performedByUserName})` : ''}
+                          </p>
+                          {event.location && (
+                            <p className="text-xs text-gray-500">
+                              <strong>Địa điểm:</strong> {event.location}
+                            </p>
+                          )}
+                          {event.additionalData && (
+                            <p className="text-xs text-gray-600 bg-white p-2 rounded border mt-2">
+                              {event.additionalData}
+                            </p>
+                          )}
+                          <div className="text-[10px] text-gray-400 font-mono mt-2 truncate">
+                            SHA-256: {event.currentHash}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                ))}
+                    )
+                  })
+                ) : (
+                  <p className="text-sm text-gray-500 text-center py-4">Chưa có sự kiện nào được ghi nhận.</p>
+                )}
               </div>
             </div>
           </CardContent>
         </Card>
-
-        {/* NEW CODE - Hash verification info (data integrity) */}
-        <Card className="border-blue-200 bg-blue-50">
-          <CardHeader>
-            <CardTitle className="text-blue-900">🔒 Xác thực Tính toàn vẹn</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-blue-900">
-            <p>✓ Toàn bộ thông tin trên trang này đã được xác thực bằng chuỗi băm mật mã (Hash Chain).</p>
-            <p className="mt-2">Nếu bất kỳ thông tin nào bị thay đổi, chuỗi băm sẽ không khớp và sự giả mạo sẽ được phát hiện ngay lập tức.</p>
-            <p className="mt-2 text-xs text-blue-800">
-              Hệ thống này sử dụng công nghệ tương tự Blockchain để đảm bảo không ai có thể thay đổi lịch sử sử dụng trái phép.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* NEW CODE - Footer info */}
-        <div className="text-center text-sm text-gray-600 py-4">
-          <p>Hệ thống Truy xuất Nguồn gốc Nông sản - Agricultural Supply Chain Traceability System</p>
-          <p className="mt-1">© 2024 - Tất cả quyền được bảo vệ</p>
-        </div>
       </div>
     </div>
   )

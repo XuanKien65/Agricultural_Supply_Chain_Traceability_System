@@ -1,4 +1,4 @@
-﻿// ==========================================
+// ==========================================
 // CODE GỐC & CÁC IMPORT CHÍNH
 // ==========================================
 import { Link, useParams } from 'react-router-dom'
@@ -6,7 +6,6 @@ import { Alert, Box, Button, Chip, Paper, Typography } from '@mui/material'
 import { ContentCopyRounded, QrCode2Rounded, ArrowBackRounded, TimelineRounded, OpenInNewRounded } from '@mui/icons-material'
 import { StatusChip } from '@/components/ui/StatusChip'
 import { useAuthStore } from '@/features/auth/auth.store'
-import { EVENT_TYPE_LABELS } from '@/features/events/events.types'
 import { useFarmerBatch } from '../batches.queries'
 
 export function BatchDetailPage() {

@@ -1,3 +1,4 @@
+using AgriTrace.Domain.Contracts;
 using AgriTrace.Domain.Common;
 using AgriTrace.Domain.Entities;
 using AgriTrace.Domain.Interfaces;
@@ -6,52 +7,218 @@ using AgriTrace.Infrastructure.Sqlserver.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace AgriTrace.Infrastructure.Sqlserver.Repositories;
+
 public sealed class BatchRepository(ApplicationDbContext db) : IBatchRepository
 {
     public async Task<PagedResult<Batch>> GetFarmerBatchesAsync(int organizationId, string? search, string? status, int page, int pageSize, CancellationToken ct = default)
     {
-        page = Math.Max(1, page); pageSize = Math.Clamp(pageSize, 1, 100);
-        var query = db.Batches.AsNoTracking().Include(x => x.Events).Where(x => x.ProducerOrganizationId == organizationId);
-        if (!string.IsNullOrWhiteSpace(status)) query = query.Where(x => x.Status == status);
-        if (!string.IsNullOrWhiteSpace(search)) query = query.Where(x => x.QrCode.Contains(search));
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var query = db.Batches
+            .AsNoTracking()
+            .Include(x => x.Events)
+            .Where(x => x.CurrentOrganizationId == organizationId);
+
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(x => x.BatchCode.Contains(search) || (x.QRCode != null && x.QRCode.Contains(search)));
+
         var total = await query.CountAsync(ct);
-        var rows = await query.OrderByDescending(x => x.CreatedAt).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
-        return new(rows.Select(Map).ToList(), total);
+        var rows = await query
+            .OrderByDescending(x => x.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return new PagedResult<Batch>(rows.Select(Map).ToList(), total);
     }
+
     public async Task<Batch?> GetByIdAsync(int id, CancellationToken ct = default)
     {
-        var row = await db.Batches.AsNoTracking().Include(x => x.Events).FirstOrDefaultAsync(x => x.Id == id, ct);
+        var row = await db.Batches
+            .AsNoTracking()
+            .Include(x => x.Events)
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
+
         return row is null ? null : Map(row);
     }
+
     public async Task<Batch> AddAsync(Batch batch, CancellationToken ct = default)
     {
-        var first = batch.Events.Single();
-        var row = new BatchDataModel { ProductId = batch.ProductId, ProducerOrganizationId = batch.ProducerOrganizationId,
-            ParentBatchId = batch.ParentBatchId, QrCode = $"pending-{Guid.NewGuid():N}", HarvestDate = batch.HarvestDate,
-            Weight = batch.Weight, Status = batch.Status, CreatedAt = batch.CreatedAt };
-        db.Batches.Add(row); await db.SaveChangesAsync(ct);
-        row.QrCode = $"/trace/{row.Id}";
-        var hash = SupplyChainEvent.ComputeHash(row.Id, first.OrganizationId, first.PerformedByUserId, first.EventType,
-            first.EventTime, first.Location, first.AdditionalData, null);
-        row.Events.Add(new SupplyChainEventDataModel { OrganizationId = first.OrganizationId,
-            PerformedByUserId = first.PerformedByUserId, EventType = first.EventType, EventTime = first.EventTime,
-            Location = first.Location, AdditionalData = first.AdditionalData, Hash = hash });
-        await db.SaveChangesAsync(ct); return Map(row);
+        var row = new BatchDataModel
+        {
+            ProductId = batch.ProductId,
+            BatchCode = batch.BatchCode,
+            Quantity = batch.Quantity,
+            CurrentOrganizationId = batch.CurrentOrganizationId,
+            ParentBatchId = batch.ParentBatchId,
+            RootBatchId = batch.RootBatchId,
+            QRCode = batch.QrCode,
+            CreatedAt = batch.CreatedAt
+        };
+
+        db.Batches.Add(row);
+        await db.SaveChangesAsync(ct);
+
+        if (string.IsNullOrEmpty(row.QRCode))
+        {
+            row.QRCode = $"https://agritrace.vn/trace/{row.Id}";
+            await db.SaveChangesAsync(ct);
+        }
+
+        return Map(row);
     }
+
     public async Task<SupplyChainEvent> AppendEventAsync(Batch batch, SupplyChainEvent e, CancellationToken ct = default)
     {
-        var row = new SupplyChainEventDataModel { BatchId = batch.Id, OrganizationId = e.OrganizationId,
-            PerformedByUserId = e.PerformedByUserId, PreviousEventId = e.PreviousEventId, EventType = e.EventType,
-            EventTime = e.EventTime, Location = e.Location, AdditionalData = e.AdditionalData, Hash = e.Hash, PreviousHash = e.PreviousHash };
+        var row = new SupplyChainEventDataModel
+        {
+            BatchId = batch.Id,
+            EventType = e.EventType,
+            OrganizationId = e.OrganizationId,
+            UserId = e.UserId,
+            EventData = e.EventData,
+            Location = e.Location,
+            PreviousHash = e.PreviousHash,
+            CurrentHash = e.CurrentHash,
+            CreatedAt = e.CreatedAt
+        };
+
         db.SupplyChainEvents.Add(row);
-        var batchRow = await db.Batches.FindAsync([batch.Id], ct) ?? throw new InvalidOperationException("Batch not found.");
-        batchRow.Status = batch.Status;
         await db.SaveChangesAsync(ct);
-        return new(row.Id, row.BatchId, row.OrganizationId, row.PerformedByUserId, row.PreviousEventId, row.EventType,
-            row.EventTime, row.Location, row.AdditionalData, row.PreviousHash, row.Hash);
+
+        return new SupplyChainEvent(row.Id, row.BatchId, row.EventType, row.OrganizationId, row.UserId,
+            row.EventData, row.Location, row.PreviousHash, row.CurrentHash, row.CreatedAt);
     }
-    private static Batch Map(BatchDataModel x) => new(x.Id, x.ProductId, x.ProducerOrganizationId, x.ParentBatchId,
-        x.QrCode, x.HarvestDate, x.Weight, x.Status, x.CreatedAt, x.Events.Select(e => new SupplyChainEvent(e.Id,
-        e.BatchId, e.OrganizationId, e.PerformedByUserId, e.PreviousEventId, e.EventType, e.EventTime, e.Location,
-        e.AdditionalData, e.PreviousHash, e.Hash, e.DigitalSignature)));
+
+    public async Task<TraceResultDto?> GetByIdWithFullTraceAsync(int id, CancellationToken ct = default)
+    {
+        var conn = db.Database.GetDbConnection();
+        await conn.OpenAsync(ct);
+
+        TraceBatchInfo? batchInfo = null;
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                SELECT b.Id, p.Name AS ProductName, p.Unit AS ProductUnit, o.Name AS ProducerOrgName,
+                       b.QRCode, NULL AS HarvestDate, b.Quantity, 'ACTIVE' AS Status, b.CreatedAt
+                FROM Batches b
+                JOIN Products p ON p.Id = b.ProductId
+                LEFT JOIN Organizations o ON o.Id = b.CurrentOrganizationId
+                WHERE b.Id = @id";
+            var p = cmd.CreateParameter(); p.ParameterName = "@id"; p.Value = id;
+            cmd.Parameters.Add(p);
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            if (await reader.ReadAsync(ct))
+            {
+                batchInfo = new TraceBatchInfo(
+                    reader.GetInt32(0),
+                    reader.GetString(1),
+                    reader.IsDBNull(2) ? null : reader.GetString(2),
+                    reader.IsDBNull(3) ? "Tổ chức sản xuất" : reader.GetString(3),
+                    reader.IsDBNull(4) ? $"https://agritrace.vn/trace/{id}" : reader.GetString(4),
+                    null,
+                    reader.GetDecimal(6),
+                    reader.GetString(7),
+                    reader.GetDateTime(8));
+            }
+        }
+        if (batchInfo is null) return null;
+
+        var events = new List<TraceEventDto>();
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                SELECT e.Id, e.EventType, e.CreatedAt, o.Name AS OrgName, u.FullName AS UserName,
+                       e.Location, e.EventData, e.PreviousHash, e.CurrentHash
+                FROM SupplyChainEvents e
+                LEFT JOIN Organizations o ON o.Id = e.OrganizationId
+                LEFT JOIN Users u ON u.Id = e.UserId
+                WHERE e.BatchId = @id
+                ORDER BY e.CreatedAt ASC";
+            var p = cmd.CreateParameter(); p.ParameterName = "@id"; p.Value = id;
+            cmd.Parameters.Add(p);
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                events.Add(new TraceEventDto(
+                    reader.GetInt32(0),
+                    reader.GetString(1),
+                    reader.GetDateTime(2),
+                    reader.IsDBNull(3) ? null : reader.GetString(3),
+                    reader.IsDBNull(4) ? null : reader.GetString(4),
+                    reader.IsDBNull(5) ? null : reader.GetString(5),
+                    reader.IsDBNull(6) ? null : reader.GetString(6),
+                    reader.IsDBNull(7) ? null : reader.GetString(7),
+                    reader.IsDBNull(8) ? string.Empty : reader.GetString(8)));
+            }
+        }
+
+        var inspections = new List<TraceInspectionDto>();
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                SELECT i.Id, u.FullName AS InspectorName, i.Result, i.CreatedAt, i.Notes
+                FROM Inspections i
+                LEFT JOIN Users u ON u.Id = i.InspectorId
+                WHERE i.BatchId = @id
+                ORDER BY i.CreatedAt DESC";
+            var p = cmd.CreateParameter(); p.ParameterName = "@id"; p.Value = id;
+            cmd.Parameters.Add(p);
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                inspections.Add(new TraceInspectionDto(
+                    reader.GetInt32(0),
+                    reader.IsDBNull(1) ? null : reader.GetString(1),
+                    reader.IsDBNull(2) ? null : reader.GetString(2),
+                    reader.IsDBNull(3) ? null : reader.GetDateTime(3),
+                    reader.IsDBNull(4) ? null : reader.GetString(4)));
+            }
+        }
+
+        var certificates = new List<TraceCertificateDto>();
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                SELECT c.Id, c.CertificateType, 'Cục Kiểm Định' AS IssuingOrg, c.FileUrl,
+                       c.IssuedAt, NULL AS ExpirationDate
+                FROM Certificates c
+                WHERE c.BatchId = @id
+                ORDER BY c.IssuedAt DESC";
+            var p = cmd.CreateParameter(); p.ParameterName = "@id"; p.Value = id;
+            cmd.Parameters.Add(p);
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                certificates.Add(new TraceCertificateDto(
+                    reader.GetInt32(0),
+                    reader.IsDBNull(1) ? null : reader.GetString(1),
+                    reader.IsDBNull(2) ? null : reader.GetString(2),
+                    reader.IsDBNull(3) ? null : reader.GetString(3),
+                    reader.IsDBNull(4) ? null : reader.GetDateTime(4),
+                    null));
+            }
+        }
+
+        bool hashChainValid = VerifyHashChain(events);
+        return new TraceResultDto(batchInfo, events, inspections, certificates, hashChainValid);
+    }
+
+    private static bool VerifyHashChain(IReadOnlyList<TraceEventDto> events)
+    {
+        if (events.Count == 0) return true;
+        if (events[0].PreviousHash is not null) return false;
+        for (int i = 1; i < events.Count; i++)
+        {
+            if (events[i].PreviousHash != events[i - 1].CurrentHash) return false;
+        }
+        return true;
+    }
+
+    private static Batch Map(BatchDataModel x) => new(
+        x.Id, x.ProductId, x.BatchCode, x.Quantity, x.CurrentOrganizationId,
+        x.ParentBatchId, x.RootBatchId, x.QRCode, x.CreatedAt,
+        x.Events.Select(e => new SupplyChainEvent(e.Id, e.BatchId, e.EventType, e.OrganizationId, e.UserId,
+            e.EventData, e.Location, e.PreviousHash, e.CurrentHash, e.CreatedAt)));
 }

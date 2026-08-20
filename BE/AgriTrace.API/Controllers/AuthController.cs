@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using AgriTrace.API.Models;
 using AgriTrace.Application.Features.Auth.Commands;
-using AgriTrace.Application.Features.Auth.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,56 +8,70 @@ using Microsoft.AspNetCore.Mvc;
 namespace AgriTrace.API.Controllers;
 
 [ApiController]
-[Route("api/auth")]
+[Route("api/v1/auth")]
 public sealed class AuthController(ISender sender) : ControllerBase
 {
     /// <summary>
-    /// Đăng ký tài khoản mới.
-    /// RoleId: 1=Admin, 2=Farmer, 3=Processor, 4=Distributor, 5=Retailer, 6=Inspector, 7=Consumer
-    /// </summary>
-    [HttpPost("register")]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken ct)
-    {
-        var result = await sender.Send(
-            new RegisterCommand(request.Username, request.Email, request.Password,
-                request.FullName, request.RoleId, request.OrganizationId), ct);
-
-        return StatusCode(StatusCodes.Status201Created,
-            ApiResponse.Success(result, System.Net.HttpStatusCode.Created));
-    }
-
-    /// <summary>
-    /// Đăng nhập – trả về JWT Bearer token.
-    /// Gắn token vào header: Authorization: Bearer {token}
+    /// POST /auth/login - Đăng nhập tài khoản.
     /// </summary>
     [HttpPost("login")]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
+    [AllowAnonymous]
+    public async Task<IActionResult> Login([FromBody] LoginCommand command, CancellationToken ct) =>
+        Ok(ApiResponse.Ok(await sender.Send(command, ct), "Đăng nhập thành công"));
+
+    /// <summary>
+    /// POST /auth/refresh-token - Cấp lại access token bằng refresh token.
+    /// </summary>
+    [HttpPost("refresh-token")]
+    [AllowAnonymous]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenCommand command, CancellationToken ct) =>
+        Ok(ApiResponse.Ok(await sender.Send(command, ct), "Cấp mới token thành công"));
+
+    /// <summary>
+    /// POST /auth/logout - Đăng xuất tài khoản.
+    /// </summary>
+    [HttpPost("logout")]
+    [Authorize]
+    public async Task<IActionResult> Logout([FromBody] LogoutCommand command, CancellationToken ct)
     {
-        var result = await sender.Send(new LoginCommand(request.Username, request.Password), ct);
-        return Ok(ApiResponse.Success(result));
+        await sender.Send(command, ct);
+        return NoContent();
     }
 
     /// <summary>
-    /// Lấy thông tin user hiện tại từ JWT token.
-    /// Yêu cầu: Authorization: Bearer {token}
+    /// GET /auth/me - Lấy thông tin tài khoản hiện tại.
     /// </summary>
     [HttpGet("me")]
     [Authorize]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Me(CancellationToken ct)
+    public async Task<IActionResult> GetMe(CancellationToken ct)
     {
-        var userIdClaim = User.FindFirstValue("userId")
-            ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userIdStr = User.FindFirstValue("userId")
+            ?? User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("sub");
 
-        if (!int.TryParse(userIdClaim, out var userId))
-            return Unauthorized(ApiResponse.Fail(System.Net.HttpStatusCode.Unauthorized, "Invalid token claims."));
+        if (!int.TryParse(userIdStr, out var userId))
+            return Unauthorized(ApiResponse.Fail("Token không hợp lệ."));
 
-        var result = await sender.Send(new GetCurrentUserQuery(userId), ct);
-        return Ok(ApiResponse.Success(result));
+        return Ok(ApiResponse.Ok(await sender.Send(new GetCurrentUserQuery(userId), ct)));
+    }
+
+    /// <summary>
+    /// PUT /auth/change-password - Đổi mật khẩu.
+    /// </summary>
+    [HttpPut("change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken ct)
+    {
+        var userIdStr = User.FindFirstValue("userId")
+            ?? User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("sub");
+
+        if (!int.TryParse(userIdStr, out var userId))
+            return Unauthorized(ApiResponse.Fail("Token không hợp lệ."));
+
+        await sender.Send(new ChangePasswordCommand(userId, request.CurrentPassword, request.NewPassword, request.ConfirmNewPassword), ct);
+        return Ok(ApiResponse.Ok(null, "Đổi mật khẩu thành công"));
     }
 }
+
+public record ChangePasswordRequest(string CurrentPassword, string NewPassword, string ConfirmNewPassword);

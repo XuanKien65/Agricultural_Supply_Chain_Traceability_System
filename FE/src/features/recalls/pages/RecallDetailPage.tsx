@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
-import { Badge } from '/Download/Agricultural_Supply_Chain_Traceability_System/FE/src/components/ui/badge.tsx'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '/Download/Agricultural_Supply_Chain_Traceability_System/FE/src/components/ui/card.tsx'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
 
 /**

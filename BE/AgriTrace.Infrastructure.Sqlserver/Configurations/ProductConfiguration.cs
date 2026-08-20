@@ -3,12 +3,21 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace AgriTrace.Infrastructure.Sqlserver.Configurations;
+
 public sealed class ProductConfiguration : IEntityTypeConfiguration<ProductDataModel>
 {
-    public void Configure(EntityTypeBuilder<ProductDataModel> b)
+    public void Configure(EntityTypeBuilder<ProductDataModel> builder)
     {
-        b.ToTable("Products"); b.HasKey(x => x.Id);
-        b.Property(x => x.Name).HasMaxLength(200).IsRequired();
-        b.Property(x => x.Unit).HasMaxLength(50); b.Property(x => x.Description);
+        builder.ToTable("Products");
+        builder.HasKey(p => p.Id);
+
+        builder.Property(p => p.Name).HasMaxLength(200);
+        builder.Property(p => p.Category).HasMaxLength(100);
+        builder.Property(p => p.Unit).HasMaxLength(50);
+
+        builder.HasOne(p => p.Organization)
+            .WithMany(o => o.Products)
+            .HasForeignKey(p => p.OrganizationId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

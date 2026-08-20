@@ -1,58 +1,57 @@
 namespace AgriTrace.Domain.Entities;
 
 /// <summary>
-/// Tài khoản người dùng trong hệ thống.
-/// Domain entity thuần – không chứa logic BCrypt (BCrypt thuộc Infrastructure).
+/// Tài khoản người dùng trong hệ thống theo Schema V2.0.
 /// </summary>
 public sealed class User
 {
     public int Id { get; private set; }
-    public int RoleId { get; private set; }
-    public int? OrganizationId { get; private set; }
-    public string Username { get; private set; }
-    public string PasswordHash { get; private set; }
-    public string Email { get; private set; }
     public string? FullName { get; private set; }
+    public string Email { get; private set; }
+    public string? PasswordHash { get; private set; }
+    public string Role { get; private set; } // ADMIN, ORGADMIN, FARMER, OPERATOR, INSPECTOR
+    public int? OrganizationId { get; private set; }
+    public bool IsActive { get; private set; }
     public DateTime CreatedAt { get; private set; }
-    public string Status { get; private set; }
 
-    // Navigation (populated by repository)
-    public string? RoleName { get; private set; }
+    // Nav / Joined fields
+    public string? OrganizationName { get; private set; }
+    public string? OrganizationType { get; private set; }
 
-    public const string StatusActive = "Active";
-    public const string StatusInactive = "Inactive";
-
-    public User(int id, int roleId, int? organizationId, string username, string passwordHash,
-        string email, string? fullName, DateTime createdAt, string status, string? roleName = null)
+    public User(int id, string? fullName, string email, string? passwordHash, string role,
+        int? organizationId, bool isActive = true, DateTime? createdAt = null,
+        string? organizationName = null, string? organizationType = null)
     {
-        if (string.IsNullOrWhiteSpace(username))
-            throw new ArgumentException("Username cannot be empty.", nameof(username));
         if (string.IsNullOrWhiteSpace(email))
             throw new ArgumentException("Email cannot be empty.", nameof(email));
-        if (string.IsNullOrWhiteSpace(passwordHash))
-            throw new ArgumentException("Password hash cannot be empty.", nameof(passwordHash));
+        if (string.IsNullOrWhiteSpace(role))
+            throw new ArgumentException("Role cannot be empty.", nameof(role));
 
         Id = id;
-        RoleId = roleId;
-        OrganizationId = organizationId;
-        Username = username.Trim().ToLowerInvariant();
-        PasswordHash = passwordHash;
-        Email = email.Trim().ToLowerInvariant();
         FullName = fullName?.Trim();
-        CreatedAt = createdAt;
-        Status = status;
-        RoleName = roleName;
+        Email = email.Trim().ToLowerInvariant();
+        PasswordHash = passwordHash;
+        Role = role.Trim().ToUpperInvariant();
+        OrganizationId = organizationId;
+        IsActive = isActive;
+        CreatedAt = createdAt ?? DateTime.UtcNow;
+        OrganizationName = organizationName;
+        OrganizationType = organizationType;
     }
 
-    public bool IsActive => Status == StatusActive;
-
-    public void Deactivate()
+    public void SetPasswordHash(string newHash)
     {
-        Status = StatusInactive;
+        PasswordHash = newHash;
     }
 
-    public void Activate()
+    public void UpdateProfile(string? fullName, string role)
     {
-        Status = StatusActive;
+        FullName = fullName?.Trim();
+        Role = role.Trim().ToUpperInvariant();
+    }
+
+    public void SetActive(bool isActive)
+    {
+        IsActive = isActive;
     }
 }

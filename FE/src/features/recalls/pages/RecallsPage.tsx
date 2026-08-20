@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '/Download/Agricultural_Supply_Chain_Traceability_System/FE/src/components/ui/button.tsx'
-import { Input } from '/Download/Agricultural_Supply_Chain_Traceability_System/FE/src/components/ui/input.tsx'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '/Download/Agricultural_Supply_Chain_Traceability_System/FE/src/components/ui/table.tsx'
-import { Badge } from '/Download/Agricultural_Supply_Chain_Traceability_System/FE/src/components/ui/badge.tsx'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
 import { AlertTriangle } from 'lucide-react'
 
 /**
@@ -61,7 +61,7 @@ export function RecallsPage() {
         <Input
           placeholder="Tìm kiếm mã lô, mã recall..."
           value={searchTerm}
-          onChange={(e) => {
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             setSearchTerm(e.target.value)
             setCurrentPage(1)
           }}

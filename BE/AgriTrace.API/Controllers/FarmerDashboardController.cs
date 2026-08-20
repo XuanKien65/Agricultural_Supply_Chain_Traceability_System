@@ -1,9 +1,10 @@
 using AgriTrace.Application.Features.Batches.Queries;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgriTrace.API.Controllers;
-[ApiController, Route("api/farmer/dashboard")]
+[ApiController, Route("api/farmer/dashboard"), Authorize(Roles = "Farmer,Admin")]
 public sealed class FarmerDashboardController(ISender sender) : ControllerBase
 {
     [HttpGet]

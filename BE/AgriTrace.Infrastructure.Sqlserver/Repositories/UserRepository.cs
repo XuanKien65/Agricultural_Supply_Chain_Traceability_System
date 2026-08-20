@@ -9,92 +9,121 @@ namespace AgriTrace.Infrastructure.Sqlserver.Repositories;
 
 public sealed class UserRepository(ApplicationDbContext db) : IUserRepository
 {
-    public async Task<User?> GetByUsernameAsync(string username, CancellationToken ct = default)
-    {
-        var input = username.Trim().ToLowerInvariant();
-        var row = await db.Users.AsNoTracking()
-            .Include(x => x.Role)
-            .FirstOrDefaultAsync(x => x.Username.ToLower() == input || x.Email.ToLower() == input, ct);
-        return row is null ? null : Map(row);
-    }
-
     public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
     {
-        var row = await db.Users.AsNoTracking()
-            .Include(x => x.Role)
-            .FirstOrDefaultAsync(x => x.Email == email.ToLowerInvariant(), ct);
-        return row is null ? null : Map(row);
+        var row = await db.Users
+            .AsNoTracking()
+            .Include(u => u.Organization)
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == email.Trim().ToLower(), ct);
+
+        return row is null ? null : MapToDomain(row);
     }
 
     public async Task<User?> GetByIdAsync(int id, CancellationToken ct = default)
     {
-        var row = await db.Users.AsNoTracking()
-            .Include(x => x.Role)
-            .FirstOrDefaultAsync(x => x.Id == id, ct);
-        return row is null ? null : Map(row);
+        var row = await db.Users
+            .AsNoTracking()
+            .Include(u => u.Organization)
+            .FirstOrDefaultAsync(u => u.Id == id, ct);
+
+        return row is null ? null : MapToDomain(row);
+    }
+
+    public async Task<PagedResult<User>> GetAllPagedAsync(
+        int? organizationId, string? role, bool? isActive, string? search, int page, int pageSize, CancellationToken ct = default)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var query = db.Users
+            .AsNoTracking()
+            .Include(u => u.Organization)
+            .AsQueryable();
+
+        if (organizationId.HasValue)
+            query = query.Where(u => u.OrganizationId == organizationId.Value);
+
+        if (!string.IsNullOrWhiteSpace(role))
+            query = query.Where(u => u.Role == role.Trim().ToUpper());
+
+        if (isActive.HasValue)
+            query = query.Where(u => u.IsActive == isActive.Value);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLower();
+            query = query.Where(u => (u.FullName != null && u.FullName.ToLower().Contains(term)) || u.Email.ToLower().Contains(term));
+        }
+
+        var total = await query.CountAsync(ct);
+        var rows = await query
+            .OrderByDescending(u => u.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return new PagedResult<User>(rows.Select(MapToDomain).ToList(), total);
     }
 
     public async Task<User> AddAsync(User user, CancellationToken ct = default)
     {
         var row = new UserDataModel
         {
-            RoleId = user.RoleId,
-            OrganizationId = user.OrganizationId,
-            Username = user.Username,
-            PasswordHash = user.PasswordHash,
-            Email = user.Email,
             FullName = user.FullName,
-            CreatedAt = user.CreatedAt,
-            Status = user.Status
+            Email = user.Email.ToLower(),
+            PasswordHash = user.PasswordHash,
+            Role = user.Role,
+            OrganizationId = user.OrganizationId,
+            IsActive = user.IsActive,
+            CreatedAt = user.CreatedAt
         };
+
         db.Users.Add(row);
         await db.SaveChangesAsync(ct);
 
-        // Reload with Role to populate RoleName
-        await db.Entry(row).Reference(x => x.Role).LoadAsync(ct);
-        return Map(row);
+        return (await GetByIdAsync(row.Id, ct))!;
     }
 
-    public async Task UpdateStatusAsync(int userId, string status, CancellationToken ct = default)
+    public async Task<User> UpdateAsync(User user, CancellationToken ct = default)
     {
-        await db.Users
-            .Where(x => x.Id == userId)
-            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, status), ct);
+        var row = await db.Users.FindAsync([user.Id], ct)
+            ?? throw new InvalidOperationException("Không tìm thấy người dùng.");
+
+        row.FullName = user.FullName;
+        row.Role = user.Role;
+        if (user.OrganizationId.HasValue) row.OrganizationId = user.OrganizationId;
+
+        await db.SaveChangesAsync(ct);
+        return (await GetByIdAsync(row.Id, ct))!;
     }
 
-    public async Task<PagedResult<User>> GetAllPagedAsync(string? search, string? roleFilter,
-        int page, int pageSize, CancellationToken ct = default)
+    public async Task UpdateStatusAsync(int userId, bool isActive, CancellationToken ct = default)
     {
-        page = Math.Max(1, page);
-        pageSize = Math.Clamp(pageSize, 1, 100);
+        var row = await db.Users.FindAsync([userId], ct)
+            ?? throw new InvalidOperationException("Không tìm thấy người dùng.");
 
-        var query = db.Users.AsNoTracking().Include(x => x.Role).AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(search))
-            query = query.Where(x => x.Username.Contains(search) || x.Email.Contains(search) || (x.FullName != null && x.FullName.Contains(search)));
-
-        if (!string.IsNullOrWhiteSpace(roleFilter))
-            query = query.Where(x => x.Role.Name == roleFilter);
-
-        var total = await query.CountAsync(ct);
-        var rows = await query
-            .OrderByDescending(x => x.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
-
-        return new PagedResult<User>(rows.Select(Map).ToList().AsReadOnly(), total);
+        row.IsActive = isActive;
+        await db.SaveChangesAsync(ct);
     }
 
-    public async Task<int?> GetOrganizationIdAsync(int userId, CancellationToken ct = default)
+    public async Task UpdatePasswordAsync(int userId, string passwordHash, CancellationToken ct = default)
     {
-        return await db.Users.AsNoTracking()
-            .Where(x => x.Id == userId)
-            .Select(x => x.OrganizationId)
-            .FirstOrDefaultAsync(ct);
+        var row = await db.Users.FindAsync([userId], ct)
+            ?? throw new InvalidOperationException("Không tìm thấy người dùng.");
+
+        row.PasswordHash = passwordHash;
+        await db.SaveChangesAsync(ct);
     }
 
-    private static User Map(UserDataModel x) =>
-        new(x.Id, x.RoleId, x.OrganizationId, x.Username, x.PasswordHash,
-            x.Email, x.FullName, x.CreatedAt, x.Status, x.Role?.Name);
+    private static User MapToDomain(UserDataModel x) => new(
+        x.Id,
+        x.FullName,
+        x.Email,
+        x.PasswordHash,
+        x.Role,
+        x.OrganizationId,
+        x.IsActive,
+        x.CreatedAt,
+        x.Organization?.Name,
+        x.Organization?.Type);
 }
