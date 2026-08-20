@@ -3,6 +3,7 @@ using AgriTrace.Domain.Common;
 using AgriTrace.Domain.Entities;
 using AgriTrace.Domain.Interfaces;
 using MediatR;
+using System.Text.Json;
 
 namespace AgriTrace.Application.Features.Batches.Commands;
 
@@ -46,10 +47,14 @@ public sealed class MergeBatchesCommandHandler(IBatchRepository batches, IProduc
         }
 
         // append MERGE event to result batch
-        var canonical = $"{saved.Id}|MERGE|{request.OrganizationId}|{request.PerformedByUserId}|{HashCanonical.Timestamp(request.EventTime ?? now)}|{Newtonsoft.Json.JsonConvert.SerializeObject(request.Sources)}|{request.Location}";
+        var eventTime = request.EventTime ?? now;
+        var eventData = JsonSerializer.Serialize(request.Sources);
+
+        var canonical = $"{saved.Id}|MERGE|{request.OrganizationId}|{request.PerformedByUserId}|{HashCanonical.Timestamp(eventTime)}|{eventData}|{request.Location}";
         var currentHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(canonical)));
+        
         var ev = new SupplyChainEvent(0, saved.Id, "MERGE", request.OrganizationId, request.PerformedByUserId,
-            Newtonsoft.Json.JsonConvert.SerializeObject(request.Sources), request.Location, null, currentHash, request.EventTime ?? now);
+            eventData, request.Location, null, currentHash, eventTime);
 
         var savedEvent = await batches.AppendEventAsync(saved, ev, ct);
 

@@ -3,6 +3,7 @@ using AgriTrace.Domain.Common;
 using AgriTrace.Domain.Entities;
 using AgriTrace.Domain.Interfaces;
 using MediatR;
+using System.Text.Json;
 
 namespace AgriTrace.Application.Features.Batches.Commands;
 
@@ -51,11 +52,13 @@ public sealed class SplitBatchCommandHandler(IBatchRepository batches, IUserRepo
         var eventTime = request.EventTime ?? DateTime.UtcNow;
 
         // Build canonical event data and compute SHA-256
-        var canonical = $"{parent.Id}|SPLIT|{request.OrganizationId}|{request.PerformedByUserId}|{HashCanonical.Timestamp(eventTime)}|{Newtonsoft.Json.JsonConvert.SerializeObject(request.ChildBatches)}|{request.Location}";
+        var eventData = JsonSerializer.Serialize(request.ChildBatches);
+
+        var canonical = $"{parent.Id}|SPLIT|{request.OrganizationId}|{request.PerformedByUserId}|{HashCanonical.Timestamp(eventTime)}|{eventData}|{request.Location}";
         var currentHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(canonical)));
 
         var ev = new SupplyChainEvent(0, parent.Id, "SPLIT", request.OrganizationId, request.PerformedByUserId,
-            Newtonsoft.Json.JsonConvert.SerializeObject(request.ChildBatches), request.Location, prevHash, currentHash, eventTime);
+            eventData, request.Location, prevHash, currentHash, eventTime);
 
         var savedEvent = await batches.AppendEventAsync(parent, ev, ct);
 

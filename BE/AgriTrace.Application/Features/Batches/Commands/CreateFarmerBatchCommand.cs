@@ -5,7 +5,7 @@ using AgriTrace.Domain.Interfaces;
 using MediatR;
 using System.Security.Cryptography;
 using System.Text;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace AgriTrace.Application.Features.Batches.Commands;
 
@@ -30,7 +30,7 @@ public sealed class CreateFarmerBatchCommandHandler(IBatchRepository batches, IP
         // Automatically record HARVEST event for this newly created batch
         var eventTime = request.HarvestDate.ToDateTime(TimeOnly.MinValue).ToUniversalTime();
         var eventDataObj = new { field = request.Location, notes = request.HarvestNotes, weight = request.Weight };
-        var eventData = JsonConvert.SerializeObject(eventDataObj);
+        var eventData = JsonSerializer.Serialize(eventDataObj);
 
         var canonical = $"{saved.Id}|HARVEST|{request.ProducerOrganizationId}|{request.PerformedByUserId}|{HashCanonical.Timestamp(eventTime)}|{eventData}|{request.Location}";
         var currentHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)));
