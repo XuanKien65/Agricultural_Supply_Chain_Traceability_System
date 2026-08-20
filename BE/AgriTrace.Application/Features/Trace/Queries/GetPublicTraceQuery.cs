@@ -6,8 +6,8 @@ using MediatR;
 
 namespace AgriTrace.Application.Features.Trace.Queries;
 
-/// <summary>Tra cứu công khai lô hàng theo BatchId — Không yêu cầu xác thực.</summary>
-public record GetPublicTraceQuery(int BatchId) : IRequest<TraceResultDto>;
+/// <summary>Tra cứu công khai lô hàng theo BatchId / BatchCode — Không yêu cầu xác thực.</summary>
+public record GetPublicTraceQuery(string BatchId) : IRequest<TraceResultDto>;
 
 public sealed class GetPublicTraceQueryHandler(IBatchRepository batches)
     : IRequestHandler<GetPublicTraceQuery, TraceResultDto>

@@ -16,7 +16,7 @@ public sealed class RecallsController(ISender sender) : ControllerBase
     /// </summary>
     [HttpGet("api/v1/recalls")]
     [HttpGet("api/recalls")]
-    [Authorize(Roles = "ADMIN,INSPECTOR")]
+    [Authorize(Roles = "ADMIN,INSPECTOR,ORGADMIN")]
     public async Task<IActionResult> GetRecalls(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -31,7 +31,7 @@ public sealed class RecallsController(ISender sender) : ControllerBase
     /// </summary>
     [HttpPost("api/v1/recalls")]
     [HttpPost("api/recalls")]
-    [Authorize(Roles = "ADMIN,INSPECTOR")]
+    [Authorize(Roles = "ADMIN,INSPECTOR,ORGADMIN")]
     public async Task<IActionResult> CreateRecall([FromBody] CreateRecallRequest request, CancellationToken ct)
     {
         var userId = GetCurrentUserId();
@@ -44,7 +44,7 @@ public sealed class RecallsController(ISender sender) : ControllerBase
     /// </summary>
     [HttpPatch("api/v1/recalls/{recallId:int}/resolve")]
     [HttpPatch("api/recalls/{recallId:int}/resolve")]
-    [Authorize(Roles = "ADMIN,INSPECTOR")]
+    [Authorize(Roles = "ADMIN,INSPECTOR,ORGADMIN")]
     public async Task<IActionResult> ResolveRecall(int recallId, CancellationToken ct)
     {
         var userId = GetCurrentUserId();

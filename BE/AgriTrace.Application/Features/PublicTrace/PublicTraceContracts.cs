@@ -3,6 +3,6 @@ using MediatR;
 
 namespace AgriTrace.Application.Features.PublicTrace;
 
-public record GetPublicTraceQuery(int BatchId) : IRequest<PublicTraceDto>;
+public record GetPublicTraceQuery(string BatchId) : IRequest<PublicTraceDto>;
 
-public record GetBatchLineageQuery(int BatchId) : IRequest<LineageDto>;
+public record GetBatchLineageQuery(string BatchId) : IRequest<LineageDto>;
