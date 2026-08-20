@@ -18,3 +18,8 @@ public record LoginRequest(
 
 /// <summary>Request body cho PUT /api/admin/users/{id}/status</summary>
 public record UpdateUserStatusRequest(string Status);
+
+/// <summary>Request body cho POST /api/auth/refresh-token</summary>
+public record RefreshTokenRequest(
+    string AccessToken,
+    string RefreshToken);

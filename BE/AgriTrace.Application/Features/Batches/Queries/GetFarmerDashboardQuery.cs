@@ -5,16 +5,28 @@ using MediatR;
 namespace AgriTrace.Application.Features.Batches.Queries;
 
 public record GetFarmerDashboardQuery(int OrganizationId) : IRequest<FarmerDashboardDto>;
+
 public sealed class GetFarmerDashboardQueryHandler(IBatchRepository batches, IProductRepository products)
     : IRequestHandler<GetFarmerDashboardQuery, FarmerDashboardDto>
 {
     public async Task<FarmerDashboardDto> Handle(GetFarmerDashboardQuery request, CancellationToken cancellationToken)
     {
-        var result = await batches.GetFarmerBatchesAsync(request.OrganizationId, null, null, 1, 100, cancellationToken);
-        var catalog = (await products.GetAllAsync(cancellationToken)).ToDictionary(x => x.Id);
-        var items = result.Items.Where(x => catalog.ContainsKey(x.ProductId)).ToList();
-        var recent = items.Take(5).Select(x => FarmerBatchMapper.ToDto(x, catalog[x.ProductId])).ToList();
-        return new(result.TotalCount, items.Count(x => x.Status == "Created"), items.Count(x => x.Status == "Recalled"),
-            items.Sum(x => x.Weight), recent);
+        var page = await batches.GetFarmerBatchesAsync(request.OrganizationId, null, null, 1, 100, cancellationToken);
+        var productPage = await products.GetAllPagedAsync(request.OrganizationId, null, null, 1, 100, cancellationToken);
+        var catalog = productPage.Items.ToDictionary(x => x.Id);
+
+        var total = page.TotalCount;
+        var inProgress = page.Items.Count;
+        var completed = 0;
+        var weight = page.Items.Sum(x => x.Quantity);
+        var items = page.Items.Take(5)
+            .Select(x =>
+            {
+                var prod = catalog.TryGetValue(x.ProductId, out var p) ? p : new Domain.Entities.Product(x.ProductId, "Sản phẩm nông sản", null, "kg", x.CurrentOrganizationId ?? 0);
+                return FarmerBatchMapper.ToDto(x, prod);
+            })
+            .ToList();
+
+        return new(total, inProgress, completed, weight, items);
     }
 }

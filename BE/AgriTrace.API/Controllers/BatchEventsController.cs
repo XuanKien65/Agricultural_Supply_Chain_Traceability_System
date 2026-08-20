@@ -3,10 +3,11 @@ using AgriTrace.API.Models;
 using AgriTrace.Application.Features.Batches.Queries;
 using AgriTrace.Application.Features.Events.Commands;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgriTrace.API.Controllers;
-[ApiController, Route("api/batches")]
+[ApiController, Route("api/batches"), Authorize]
 public sealed class BatchEventsController(ISender sender) : ControllerBase
 {
     [HttpGet("{id:int}")]
@@ -26,5 +27,13 @@ public sealed class BatchEventsController(ISender sender) : ControllerBase
     [HttpPut("{id:int}/events"), HttpDelete("{id:int}/events")]
     public IActionResult RejectEventMutation(int id) =>
         StatusCode((int)HttpStatusCode.MethodNotAllowed,
-            ApiResponse.Fail(HttpStatusCode.MethodNotAllowed, "Sự kiện đã ghi nhận không thể sửa hoặc xoá."));
+            ApiResponse.Fail("Sự kiện đã ghi nhận không thể sửa hoặc xoá."));
+
+    /// <summary>
+    /// Kiểm tra tính toàn vẹn hash chain của lô hàng.
+    /// Xác minh mỗi sự kiện có Hash đúng và PreviousHash khớp sự kiện trước.
+    /// </summary>
+    [HttpGet("{id:int}/verify")]
+    public async Task<IActionResult> VerifyHashChain(int id, CancellationToken ct) =>
+        Ok(await sender.Send(new VerifyHashChainQuery(id), ct));
 }

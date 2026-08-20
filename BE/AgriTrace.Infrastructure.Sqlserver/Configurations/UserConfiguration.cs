@@ -6,25 +6,23 @@ namespace AgriTrace.Infrastructure.Sqlserver.Configurations;
 
 public sealed class UserConfiguration : IEntityTypeConfiguration<UserDataModel>
 {
-    public void Configure(EntityTypeBuilder<UserDataModel> b)
+    public void Configure(EntityTypeBuilder<UserDataModel> builder)
     {
-        b.ToTable("Users");
-        b.HasKey(x => x.Id);
+        builder.ToTable("Users");
+        builder.HasKey(u => u.Id);
 
-        b.Property(x => x.Username).HasMaxLength(50).IsRequired();
-        b.HasIndex(x => x.Username).IsUnique();
+        builder.Property(u => u.FullName).HasMaxLength(200);
+        builder.Property(u => u.Email).IsRequired().HasMaxLength(200);
+        builder.HasIndex(u => u.Email).IsUnique();
 
-        b.Property(x => x.Email).HasMaxLength(100).IsRequired();
-        b.HasIndex(x => x.Email).IsUnique();
+        builder.Property(u => u.PasswordHash).HasMaxLength(500);
+        builder.Property(u => u.Role).IsRequired().HasMaxLength(50);
+        builder.Property(u => u.IsActive).HasDefaultValue(true);
+        builder.Property(u => u.CreatedAt).HasDefaultValueSql("GETDATE()");
 
-        b.Property(x => x.PasswordHash).HasMaxLength(255).IsRequired();
-        b.Property(x => x.FullName).HasMaxLength(100);
-        b.Property(x => x.Status).HasMaxLength(20).IsRequired().HasDefaultValue("Active");
-        b.Property(x => x.CreatedAt).HasDefaultValueSql("getdate()");
-
-        b.HasOne(x => x.Role)
-            .WithMany(r => r.Users)
-            .HasForeignKey(x => x.RoleId)
-            .OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(u => u.Organization)
+            .WithMany(o => o.Users)
+            .HasForeignKey(u => u.OrganizationId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

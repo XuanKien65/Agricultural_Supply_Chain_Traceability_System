@@ -69,7 +69,7 @@ namespace AgriTrace.API.Common
             }
 
             var response = ApiResponse.Fail(
-                statusCode,
+                messages.FirstOrDefault() ?? "Lỗi hệ thống",
                 messages);
 
             httpContext.Response.StatusCode =

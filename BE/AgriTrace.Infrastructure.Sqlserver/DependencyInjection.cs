@@ -19,7 +19,7 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(connectionString));
 
-        services.AddScoped<IFarmRepository, FarmRepository>();
+        services.AddScoped<IOrganizationRepository, OrganizationRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IBatchRepository, BatchRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<IAdminRepository, AdminRepository>();
         // CRUD các bảng Admin còn lại
         services.AddScoped<IAdminCrudRepository, AdminCrudRepository>();
+        services.AddScoped<IRecallNotificationRepository, RecallNotificationRepository>();
 
         return services;
     }

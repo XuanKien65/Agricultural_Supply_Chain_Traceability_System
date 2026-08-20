@@ -1,4 +1,4 @@
-﻿using AgriTrace.Application.Common.Exceptions;
+using AgriTrace.Application.Common.Exceptions;
 using AgriTrace.Application.Contracts;
 using AgriTrace.Domain.Interfaces;
 using MediatR;
@@ -142,7 +142,8 @@ public sealed record DeleteAdminRecallCommand(
 
 
 public sealed class AdminCrudCommandHandler(
-    IAdminCrudRepository repository)
+    IAdminCrudRepository repository,
+    IRecallNotificationRepository recallNotifications)
     :
         IRequestHandler<
             CreateAdminOrganizationCommand,
@@ -429,15 +430,23 @@ public sealed class AdminCrudCommandHandler(
 
     public async Task<AdminRecallDto> Handle(
         CreateAdminRecallCommand r,
-        CancellationToken ct) =>
-        (
-            await repository.CreateRecallAsync(
-                r.BatchId,
-                r.Reason,
-                r.Severity,
-                r.CreatedBy,
-                ct)
-        ).ToDto();
+        CancellationToken ct)
+    {
+        var recall = await repository.CreateRecallAsync(
+            r.BatchId,
+            r.Reason,
+            r.Severity,
+            r.CreatedBy,
+            ct);
+
+        // Tự động lan truyền thông báo thu hồi tới các Organization đã tham gia chuỗi
+        await recallNotifications.PropagateRecallNotificationsAsync(
+            recall.Id,
+            recall.BatchId,
+            ct);
+
+        return recall.ToDto();
+    }
 
     public async Task<AdminRecallDto> Handle(
         UpdateAdminRecallCommand r,

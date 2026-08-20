@@ -1,10 +1,10 @@
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '/Download/Agricultural_Supply_Chain_Traceability_System/FE/src/components/ui/button.tsx'
-import { Input } from '/Download/Agricultural_Supply_Chain_Traceability_System/FE/src/components/ui/input.tsx'
-import { Label } from '/Download/Agricultural_Supply_Chain_Traceability_System/FE/src/components/ui/label.tsx'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '/Download/Agricultural_Supply_Chain_Traceability_System/FE/src/components/ui/select.tsx'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AlertCircle } from 'lucide-react'
 
 /**
@@ -100,7 +100,7 @@ export function CreateRecallPage() {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="severity">Mức độ Nguy hiểm *</Label>
-            <Select value={formData.severity} onValueChange={(value) => setFormData((prev) => ({ ...prev, severity: value }))}>
+            <Select value={formData.severity} onValueChange={(value: string) => setFormData((prev) => ({ ...prev, severity: value }))}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -128,7 +128,7 @@ export function CreateRecallPage() {
         {/* NEW CODE - Recall reason and description */}
         <div className="space-y-2">
           <Label htmlFor="reason">Lý do Thu hồi *</Label>
-          <Select value={formData.reason} onValueChange={(value) => setFormData((prev) => ({ ...prev, reason: value }))}>
+          <Select value={formData.reason} onValueChange={(value: string) => setFormData((prev) => ({ ...prev, reason: value }))}>
             <SelectTrigger>
               <SelectValue placeholder="Chọn lý do" />
             </SelectTrigger>

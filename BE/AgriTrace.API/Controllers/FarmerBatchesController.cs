@@ -2,10 +2,11 @@ using AgriTrace.API.Models;
 using AgriTrace.Application.Features.Batches.Commands;
 using AgriTrace.Application.Features.Batches.Queries;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgriTrace.API.Controllers;
-[ApiController, Route("api/farmer/batches")]
+[ApiController, Route("api/farmer/batches"), Authorize(Roles = "Farmer,Admin")]
 public sealed class FarmerBatchesController(ISender sender) : ControllerBase
 {
     [HttpGet]

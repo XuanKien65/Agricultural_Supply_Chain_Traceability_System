@@ -3,14 +3,30 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace AgriTrace.Infrastructure.Sqlserver.Configurations;
+
 public sealed class BatchConfiguration : IEntityTypeConfiguration<BatchDataModel>
 {
-    public void Configure(EntityTypeBuilder<BatchDataModel> b)
+    public void Configure(EntityTypeBuilder<BatchDataModel> builder)
     {
-        b.ToTable("Batches"); b.HasKey(x => x.Id);
-        b.Property(x => x.QrCode).HasMaxLength(255).IsRequired(); b.HasIndex(x => x.QrCode).IsUnique();
-        b.Property(x => x.Weight).HasPrecision(18, 2); b.Property(x => x.Status).HasMaxLength(50).IsRequired();
-        b.HasOne(x => x.Product).WithMany().HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Restrict);
-        b.HasMany(x => x.Events).WithOne(x => x.Batch).HasForeignKey(x => x.BatchId).OnDelete(DeleteBehavior.Restrict);
+        builder.ToTable("Batches");
+        builder.HasKey(b => b.Id);
+
+        builder.Property(b => b.BatchCode).IsRequired().HasMaxLength(100);
+        builder.HasIndex(b => b.BatchCode).IsUnique();
+        builder.Property(b => b.Quantity).HasColumnType("decimal(18,2)");
+        builder.Property(b => b.QRCode).HasMaxLength(500);
+        builder.Property(b => b.CreatedAt).HasDefaultValueSql("GETDATE()");
+
+        builder.HasOne(b => b.Product)
+            .WithMany()
+            .HasForeignKey(b => b.ProductId);
+
+        builder.HasOne(b => b.CurrentOrganization)
+            .WithMany()
+            .HasForeignKey(b => b.CurrentOrganizationId);
+
+        builder.HasOne(b => b.ParentBatch)
+            .WithMany()
+            .HasForeignKey(b => b.ParentBatchId);
     }
 }
