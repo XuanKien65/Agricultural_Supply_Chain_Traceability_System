@@ -1,4 +1,5 @@
 using AgriTrace.Application.Contracts;
+using AgriTrace.Domain.Common;
 using AgriTrace.Domain.Entities;
 using AgriTrace.Domain.Interfaces;
 using MediatR;
@@ -31,7 +32,7 @@ public sealed class CreateFarmerBatchCommandHandler(IBatchRepository batches, IP
         var eventDataObj = new { field = request.Location, notes = request.HarvestNotes, weight = request.Weight };
         var eventData = JsonConvert.SerializeObject(eventDataObj);
 
-        var canonical = $"{saved.Id}|HARVEST|{request.ProducerOrganizationId}|{request.PerformedByUserId}|{eventTime:O}|{eventData}|{request.Location}";
+        var canonical = $"{saved.Id}|HARVEST|{request.ProducerOrganizationId}|{request.PerformedByUserId}|{HashCanonical.Timestamp(eventTime)}|{eventData}|{request.Location}";
         var currentHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)));
 
         var harvestEvent = new SupplyChainEvent(0, saved.Id, "HARVEST", request.ProducerOrganizationId, request.PerformedByUserId,

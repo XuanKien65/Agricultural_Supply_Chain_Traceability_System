@@ -81,7 +81,7 @@ public sealed class BatchEventsController(ISender sender) : ControllerBase
         static async Task<bool> HasValidImageSignatureAsync(Stream s, string contentType)
         {
             s.Seek(0, SeekOrigin.Begin);
-            Span<byte> header = stackalloc byte[12];
+            var header = new byte[12];
             var read = await s.ReadAsync(header);
             s.Seek(0, SeekOrigin.Begin);
 

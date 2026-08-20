@@ -29,11 +29,10 @@ const FarmerDashboardPage = lazyPage(() => import('@/features/dashboard/pages/Fa
 const BatchesPage = lazyPage(() => import('@/features/batches/pages/BatchesPage'), 'BatchesPage')
 const CreateBatchPage = lazyPage(() => import('@/features/batches/pages/CreateBatchPage'), 'CreateBatchPage')
 const BatchDetailPage = lazyPage(() => import('@/features/batches/pages/BatchDetailPage'), 'BatchDetailPage')
+const SplitBatchPage = lazyPage(() => import('@/features/batches/pages/SplitBatchPage'), 'SplitBatchPage')
+const MergeBatchPage = lazyPage(() => import('@/features/batches/pages/MergeBatchPage'), 'MergeBatchPage')
 
 // Sự kiện chuỗi cung ứng (Chain of Custody Events)
-const EventsPage = lazyPage(() => import('@/features/events/pages/EventsPage'), 'EventsPage')
-const CreateEventPage = lazyPage(() => import('@/features/events/pages/CreateEventPage'), 'CreateEventPage')
-const EventDetailPage = lazyPage(() => import('@/features/events/pages/EventDetailPage'), 'EventDetailPage')
 const RecordEventPage = lazyPage(() => import('@/features/events/pages/RecordEventPage'), 'RecordEventPage')
 
 // Sản phẩm & Chứng nhận (Products)
@@ -49,6 +48,12 @@ const InspectionDetailPage = lazyPage(() => import('@/features/quality/pages/Ins
 const RecallsPage = lazyPage(() => import('@/features/recalls/pages/RecallsPage'), 'RecallsPage')
 const CreateRecallPage = lazyPage(() => import('@/features/recalls/pages/CreateRecallPage'), 'CreateRecallPage')
 const RecallDetailPage = lazyPage(() => import('@/features/recalls/pages/RecallDetailPage'), 'RecallDetailPage')
+
+// Báo cáo & Phân tích (Analytics)
+const AnalyticsOverviewPage = lazyPage(() => import('@/features/analytics/pages/AnalyticsOverviewPage'), 'AnalyticsOverviewPage')
+const BatchDistributionPage = lazyPage(() => import('@/features/analytics/pages/BatchDistributionPage'), 'BatchDistributionPage')
+const ProcessingTimePage = lazyPage(() => import('@/features/analytics/pages/ProcessingTimePage'), 'ProcessingTimePage')
+const TracebackPage = lazyPage(() => import('@/features/analytics/pages/TracebackPage'), 'TracebackPage')
 
 // ==========================================
 // P3: ADMIN PAGES
@@ -76,7 +81,7 @@ export const router = createBrowserRouter([
       // NHÁNH A: QUẢN TRỊ VIÊN (Admin)
       // ---------------------------------------------------------
       {
-        element: <RoleRoute roles={['Admin']} />,
+        element: <RoleRoute roles={['ADMIN']} />,
         children: [
           {
             path: 'admin',
@@ -100,15 +105,12 @@ export const router = createBrowserRouter([
         children: [
           // Dashboard chung
           {
-            element: <RoleRoute roles={['Farmer', 'Processor', 'Distributor', 'Retailer', 'Inspector']} />,
+            element: <RoleRoute roles={['FARMER', 'OPERATOR', 'INSPECTOR', 'ADMIN']} />,
             children: [
               { path: 'dashboard', element: <ActorDashboardPage /> },
               { path: 'farmer', element: <FarmerDashboardPage /> },
               { path: 'batches', element: <BatchesPage /> },
               { path: 'batches/:batchId', element: <BatchDetailPage /> },
-              { path: 'events', element: <EventsPage /> },
-              { path: 'events/new', element: <CreateEventPage /> },
-              { path: 'events/:eventId', element: <EventDetailPage /> },
               { path: 'products', element: <ProductsPage /> },
               { path: 'products/new', element: <CreateProductPage /> },
               { path: 'products/:productId', element: <ProductDetailPage /> },
@@ -117,7 +119,7 @@ export const router = createBrowserRouter([
 
           // Quyền riêng của Farmer
           {
-            element: <RoleRoute roles={['Farmer']} />,
+            element: <RoleRoute roles={['FARMER']} />,
             children: [
               { path: 'batches/new', element: <CreateBatchPage /> },
             ],
@@ -125,17 +127,25 @@ export const router = createBrowserRouter([
 
           // Quyền Ghi nhận sự kiện chuỗi
           {
-            element: <RoleRoute roles={['Farmer', 'Processor', 'Distributor', 'Retailer']} />,
+            element: <RoleRoute roles={['FARMER', 'OPERATOR']} />,
             children: [
-              { path: 'batches/:batchId/events/new', element: <CreateEventPage /> },
               { path: 'record-event', element: <RecordEventPage /> },
               { path: 'record-event/:batchId', element: <RecordEventPage /> },
             ],
           },
 
+          // Quyền Tách lô / Gộp lô
+          {
+            element: <RoleRoute roles={['OPERATOR', 'ADMIN']} />,
+            children: [
+              { path: 'batches/:batchId/split', element: <SplitBatchPage /> },
+              { path: 'batches/merge', element: <MergeBatchPage /> },
+            ],
+          },
+
           // Quyền Kiểm định & Thu hồi
           {
-            element: <RoleRoute roles={['Inspector', 'Admin']} />,
+            element: <RoleRoute roles={['INSPECTOR', 'ADMIN']} />,
             children: [
               { path: 'quality', element: <QualityInspectionsPage /> },
               { path: 'quality/new', element: <CreateInspectionPage /> },
@@ -143,6 +153,26 @@ export const router = createBrowserRouter([
               { path: 'recalls', element: <RecallsPage /> },
               { path: 'recalls/new', element: <CreateRecallPage /> },
               { path: 'recalls/:recallId', element: <RecallDetailPage /> },
+            ],
+          },
+
+          // Báo cáo & Phân tích (Analytics)
+          {
+            element: <RoleRoute roles={['ADMIN']} />,
+            children: [{ path: 'analytics/overview', element: <AnalyticsOverviewPage /> }],
+          },
+          {
+            element: <RoleRoute roles={['ADMIN', 'ORGADMIN']} />,
+            children: [
+              { path: 'analytics/batch-distribution', element: <BatchDistributionPage /> },
+              { path: 'analytics/processing-time', element: <ProcessingTimePage /> },
+            ],
+          },
+          {
+            element: <RoleRoute roles={['ADMIN', 'INSPECTOR']} />,
+            children: [
+              { path: 'analytics/traceback', element: <TracebackPage /> },
+              { path: 'analytics/traceback/:batchId', element: <TracebackPage /> },
             ],
           },
         ],

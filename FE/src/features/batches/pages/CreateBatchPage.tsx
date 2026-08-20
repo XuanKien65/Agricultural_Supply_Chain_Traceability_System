@@ -6,13 +6,13 @@ import { useNavigate } from 'react-router-dom'
 import { Alert, Box, Button, MenuItem, Paper, TextField, Typography } from '@mui/material'
 import { ArrowBackRounded, QrCode2Rounded, CheckCircleRounded } from '@mui/icons-material'
 import { useAuthStore } from '@/features/auth/auth.store'
-import { useCreateBatch, useProducts } from '../batches.queries'
+import { useCreateFarmerBatch, useProducts } from '../batches.queries'
 
 export function CreateBatchPage() {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
-  const { data: products = [] } = useProducts()
-  const create = useCreateBatch()
+  const { data: products = [] } = useProducts(user?.organizationId ?? 0)
+  const create = useCreateFarmerBatch()
 
   // ==========================================
   // CODE GỐC: State form và submit

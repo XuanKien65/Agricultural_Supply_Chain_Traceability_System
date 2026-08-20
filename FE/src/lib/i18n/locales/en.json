@@ -33,11 +33,9 @@
     "signUp": "Sign up",
     "signIn": "Sign in",
     "roles": {
-      "Farmer": "Farmer / Producer",
-      "Processor": "Processor",
-      "Distributor": "Distributor",
-      "Retailer": "Retailer",
-      "Inspector": "Quality Inspector"
+      "FARMER": "Farmer / Producer",
+      "OPERATOR": "Operator (processing/transport/retail)",
+      "INSPECTOR": "Quality Inspector"
     }
   },
   "batches": {

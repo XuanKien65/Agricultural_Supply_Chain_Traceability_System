@@ -1,24 +1,35 @@
-import type { Role } from '@/features/auth/auth.types'
-
-export type EventType = 'HARVEST' | 'PROCESS' | 'PACKAGE' | 'TRANSPORT' | 'DISTRIBUTE' | 'RETAIL'
-
-/** Thứ tự chuẩn của chain of custody — khớp BE (`SupplyChainEvent.Order`). */
-export const EVENT_ORDER: EventType[] = ['HARVEST', 'PROCESS', 'PACKAGE', 'TRANSPORT', 'DISTRIBUTE', 'RETAIL']
+export type EventType =
+  | 'HARVEST'
+  | 'PROCESS'
+  | 'PACKAGE'
+  | 'TRANSPORT'
+  | 'RECEIVE'
+  | 'INSPECT'
+  | 'SPLIT'
+  | 'MERGE'
 
 export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   HARVEST: 'Thu hoạch',
   PROCESS: 'Sơ chế',
   PACKAGE: 'Đóng gói',
   TRANSPORT: 'Vận chuyển',
-  DISTRIBUTE: 'Phân phối',
-  RETAIL: 'Bán lẻ',
+  RECEIVE: 'Nhận hàng',
+  INSPECT: 'Kiểm định',
+  SPLIT: 'Tách lô',
+  MERGE: 'Gộp lô',
 }
 
-/** Vai trò nào được ghi loại sự kiện nào — khớp BUSINESS_FLOW.md §2. */
-export const ROLE_EVENT_TYPES: Partial<Record<Role, EventType[]>> = {
-  Processor: ['PROCESS', 'PACKAGE'],
-  Distributor: ['TRANSPORT', 'DISTRIBUTE'],
-  Retailer: ['RETAIL'],
+/**
+ * Loại sự kiện được phép ghi theo Organization Type — khớp BE
+ * `API_Specification.md` §8.1. `INSPECT` luôn cho phép nếu user có role
+ * INSPECTOR, bất kể tổ chức. BE không tự chặn ở server (chỉ check user
+ * cùng organizationId) nên đây thuần là gợi ý UX, không phải rào bảo mật.
+ */
+export const ORG_TYPE_EVENT_TYPES: Record<string, EventType[]> = {
+  FARM: ['HARVEST'],
+  PROCESSOR: ['PROCESS', 'PACKAGE', 'TRANSPORT', 'SPLIT', 'MERGE'],
+  DISTRIBUTOR: ['TRANSPORT', 'RECEIVE', 'SPLIT', 'MERGE'],
+  RETAILER: ['RECEIVE'],
 }
 
 export interface BatchEvent {

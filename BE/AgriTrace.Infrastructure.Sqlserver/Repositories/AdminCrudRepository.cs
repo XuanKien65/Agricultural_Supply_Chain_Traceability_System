@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Data.Common;
+using AgriTrace.Domain.Common;
 using AgriTrace.Domain.Entities;
 using AgriTrace.Domain.Interfaces;
 using AgriTrace.Infrastructure.Sqlserver.Persistence;
@@ -1031,12 +1032,13 @@ public sealed class AdminCrudRepository(
             values,
             parameters);
 
+        var now = DateTime.UtcNow;
         var effectiveCurrentHash =
             NullIfWhiteSpace(currentHash)
             ?? Convert.ToHexString(
                 System.Security.Cryptography.SHA256.HashData(
                     System.Text.Encoding.UTF8.GetBytes(
-                        $"{batchId}|{eventType}|{organizationId}|{userId}|{DateTime.UtcNow:O}|{eventData}|{location}")));
+                        $"{batchId}|{eventType}|{organizationId}|{userId}|{HashCanonical.Timestamp(now)}|{eventData}|{location}")));
 
         AddInsert(
             current,
@@ -1049,7 +1051,7 @@ public sealed class AdminCrudRepository(
         AddInsert(
             created,
             "@CreatedAt",
-            DateTime.UtcNow,
+            now,
             columns,
             values,
             parameters);

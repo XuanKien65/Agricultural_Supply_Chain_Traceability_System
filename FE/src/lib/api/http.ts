@@ -62,11 +62,11 @@ let refreshing: Promise<void> | null = null
 async function refreshSession(): Promise<void> {
   const refresh = tokenStorage.getRefresh()
   if (!refresh) throw new Error('No refresh token')
-  const { data } = await axios.post<{ accessToken: string; refreshToken?: string }>(
-    `${env.apiBaseUrl}/auth/refresh`,
+  const { data } = await axios.post<{ result: { accessToken: string; refreshToken?: string } }>(
+    `${env.apiBaseUrl}/v1/auth/refresh-token`,
     { refreshToken: refresh },
   )
-  tokenStorage.set(data.accessToken, data.refreshToken)
+  tokenStorage.set(data.result.accessToken, data.result.refreshToken)
 }
 
 http.interceptors.response.use(

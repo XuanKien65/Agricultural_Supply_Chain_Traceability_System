@@ -6,8 +6,10 @@ const EVENT_TYPE_COLORS: Record<EventType, ChipProps['color']> = {
   PROCESS: 'info',
   PACKAGE: 'secondary',
   TRANSPORT: 'warning',
-  DISTRIBUTE: 'primary',
-  RETAIL: 'success',
+  RECEIVE: 'primary',
+  INSPECT: 'error',
+  SPLIT: 'default',
+  MERGE: 'default',
 }
 
 interface Props {

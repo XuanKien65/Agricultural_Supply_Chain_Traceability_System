@@ -15,8 +15,6 @@ import {
   Agriculture,
   FactCheckRounded as ClipboardCheck,
   Factory,
-  LocalShipping,
-  Storefront,
   Visibility,
   VisibilityOff,
 } from '@mui/icons-material'
@@ -24,11 +22,9 @@ import { useAuthStore } from './auth.store'
 import { REGISTERABLE_ROLES, type RegisterableRole } from './auth.types'
 
 const ROLE_ICONS: Record<RegisterableRole, typeof Agriculture> = {
-  Farmer: Agriculture,
-  Processor: Factory,
-  Distributor: LocalShipping,
-  Retailer: Storefront,
-  Inspector: ClipboardCheck,
+  FARMER: Agriculture,
+  OPERATOR: Factory,
+  INSPECTOR: ClipboardCheck,
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -40,11 +36,10 @@ export function RegisterPage() {
 
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
-  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [role, setRole] = useState<RegisterableRole>('Farmer')
+  const [role, setRole] = useState<RegisterableRole>('FARMER')
   const [formError, setFormError] = useState<string | null>(null)
 
   const confirmMismatch = confirmPassword.length > 0 && password !== confirmPassword
@@ -72,7 +67,6 @@ export function RegisterPage() {
       await register({
         fullName,
         email,
-        username: username.trim() || email.trim(),
         password,
         role,
       })
@@ -112,14 +106,6 @@ export function RegisterPage() {
             required
             fullWidth
           />
-          <TextField
-            label={t('auth.username', 'Tên tài khoản (Tùy chọn, mặc định lấy email)')}
-            placeholder="Ví dụ: farmer123"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            fullWidth
-          />
-
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
             <TextField
               label={t('auth.password')}
@@ -152,7 +138,7 @@ export function RegisterPage() {
 
           <Box>
             <Typography sx={{ fontSize: 14, fontWeight: 600, mb: 1 }}>{t('auth.role')}</Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 1 }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
               {REGISTERABLE_ROLES.map((r) => {
                 const Icon = ROLE_ICONS[r]
                 const active = r === role

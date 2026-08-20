@@ -1,4 +1,5 @@
 using AgriTrace.Application.Common.Exceptions;
+using AgriTrace.Domain.Common;
 using AgriTrace.Domain.Entities;
 using AgriTrace.Domain.Interfaces;
 using MediatR;
@@ -50,7 +51,7 @@ public sealed class SplitBatchCommandHandler(IBatchRepository batches, IUserRepo
         var eventTime = request.EventTime ?? DateTime.UtcNow;
 
         // Build canonical event data and compute SHA-256
-        var canonical = $"{parent.Id}|SPLIT|{request.OrganizationId}|{request.PerformedByUserId}|{eventTime:O}|{Newtonsoft.Json.JsonConvert.SerializeObject(request.ChildBatches)}|{request.Location}";
+        var canonical = $"{parent.Id}|SPLIT|{request.OrganizationId}|{request.PerformedByUserId}|{HashCanonical.Timestamp(eventTime)}|{Newtonsoft.Json.JsonConvert.SerializeObject(request.ChildBatches)}|{request.Location}";
         var currentHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(canonical)));
 
         var ev = new SupplyChainEvent(0, parent.Id, "SPLIT", request.OrganizationId, request.PerformedByUserId,

@@ -3,7 +3,7 @@
 // ==========================================
 import { Suspense } from 'react'
 import { AppBar, Box, Button, Toolbar, Typography, Chip, Avatar } from '@mui/material'
-import { LogoutRounded, DashboardRounded, Inventory2Rounded, TimelineRounded, FactCheckRounded, WarningAmberRounded, CategoryRounded, HomeRounded } from '@mui/icons-material'
+import { LogoutRounded, DashboardRounded, Inventory2Rounded, TimelineRounded, FactCheckRounded, WarningAmberRounded, CategoryRounded, HomeRounded, InsightsRounded } from '@mui/icons-material'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/features/auth/auth.store'
@@ -23,10 +23,13 @@ export function MainLayout() {
     { label: 'Trang chủ', to: '/', icon: <HomeRounded fontSize="small" /> },
     { label: 'Bảng điều khiển', to: '/dashboard', icon: <DashboardRounded fontSize="small" /> },
     { label: 'Lô hàng', to: '/batches', icon: <Inventory2Rounded fontSize="small" /> },
-    { label: 'Sự kiện chuỗi', to: '/events', icon: <TimelineRounded fontSize="small" /> },
+    { label: 'Ghi nhận sự kiện', to: '/record-event', icon: <TimelineRounded fontSize="small" /> },
     { label: 'Sản phẩm', to: '/products', icon: <CategoryRounded fontSize="small" /> },
     { label: 'Kiểm định (QC)', to: '/quality', icon: <FactCheckRounded fontSize="small" /> },
     { label: 'Thu hồi (Recall)', to: '/recalls', icon: <WarningAmberRounded fontSize="small" /> },
+    ...(user && ['ADMIN', 'ORGADMIN', 'INSPECTOR'].includes(user.role)
+      ? [{ label: 'Phân tích', to: '/analytics/overview', icon: <InsightsRounded fontSize="small" /> }]
+      : []),
   ]
   /* ==========================================
    * END NEW CODE
