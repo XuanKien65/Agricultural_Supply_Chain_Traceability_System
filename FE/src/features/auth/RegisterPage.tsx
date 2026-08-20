@@ -5,6 +5,7 @@ import {
   Alert,
   Box,
   Button,
+  Divider,
   IconButton,
   InputAdornment,
   Paper,
@@ -80,12 +81,7 @@ export function RegisterPage() {
   const errorMessage = formError ?? error
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, minHeight: '100vh', justifyContent: 'center', p: 2 }}>
-      <Box sx={{ width: '100%', maxWidth: 560 }}>
-        <Button component={Link} to="/" startIcon={<HomeRounded />} size="small" sx={{ mb: 1, color: 'text.secondary' }}>
-          Về trang chủ
-        </Button>
-      </Box>
+    <Box sx={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', p: 2 }}>
       <Paper sx={{ width: '100%', maxWidth: 560, p: 4, border: '1px solid', borderColor: 'divider', borderRadius: 3, textAlign: 'center' }}>
         <Typography variant="h5" sx={{ fontWeight: 800 }}>
           {t('auth.register')}
@@ -181,6 +177,18 @@ export function RegisterPage() {
               {t('auth.signIn')}
             </Link>
           </Typography>
+
+          <Divider sx={{ my: 0.5 }} />
+
+          <Button
+            component={Link}
+            to="/"
+            startIcon={<HomeRounded fontSize="small" />}
+            size="small"
+            sx={{ color: 'text.disabled', fontSize: 13 }}
+          >
+            Về trang chủ
+          </Button>
         </Box>
       </Paper>
     </Box>
