@@ -8,6 +8,15 @@ export const ROLE_LABELS: Record<Role, string> = {
   INSPECTOR: 'Kiểm định viên',
 }
 
+/** Trang mặc định sau khi đăng nhập, hoặc khi vào trang không đúng quyền của mình. */
+export const ROLE_DEFAULT_ROUTES: Record<Role, string> = {
+  ADMIN: '/admin',
+  ORGADMIN: '/analytics/batch-distribution',
+  FARMER: '/farmer',
+  OPERATOR: '/batches',
+  INSPECTOR: '/batches',
+}
+
 export type RegisterableRole = Exclude<Role, 'ADMIN' | 'ORGADMIN'>
 
 export const REGISTERABLE_ROLES: RegisterableRole[] = ['FARMER', 'OPERATOR', 'INSPECTOR']

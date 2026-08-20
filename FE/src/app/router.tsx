@@ -63,6 +63,11 @@ const AdminRolesPage = lazyPage(() => import('@/features/admin/pages/AdminRolesP
 const AdminUnitsPage = lazyPage(() => import('@/features/admin/pages/AdminUnitsPage'), 'AdminUnitsPage')
 const AdminUsersPage = lazyPage(() => import('@/features/admin/pages/AdminUsersPage'), 'AdminUsersPage')
 const AdminProductsPage = lazyPage(() => import('@/features/admin/pages/AdminProductsPage'), 'AdminProductsPage')
+const AdminBatchesPage = lazyPage(() => import('@/features/admin/pages/AdminBatchesPage'), 'AdminBatchesPage')
+const AdminEventsPage = lazyPage(() => import('@/features/admin/pages/AdminEventsPage'), 'AdminEventsPage')
+const AdminInspectionsPage = lazyPage(() => import('@/features/admin/pages/AdminInspectionsPage'), 'AdminInspectionsPage')
+const AdminCertificatesPage = lazyPage(() => import('@/features/admin/pages/AdminCertificatesPage'), 'AdminCertificatesPage')
+const AdminRecallsPage = lazyPage(() => import('@/features/admin/pages/AdminRecallsPage'), 'AdminRecallsPage')
 
 // --- ROUTER CONFIGURATION ---
 export const router = createBrowserRouter([
@@ -92,6 +97,11 @@ export const router = createBrowserRouter([
               { path: 'units', element: <AdminUnitsPage /> },
               { path: 'users', element: <AdminUsersPage /> },
               { path: 'products', element: <AdminProductsPage /> },
+              { path: 'batches', element: <AdminBatchesPage /> },
+              { path: 'events', element: <AdminEventsPage /> },
+              { path: 'inspections', element: <AdminInspectionsPage /> },
+              { path: 'certificates', element: <AdminCertificatesPage /> },
+              { path: 'recalls', element: <AdminRecallsPage /> },
             ],
           },
         ],

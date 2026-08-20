@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Alert, Box, Button, IconButton, InputAdornment, Paper, TextField, Typography } from '@mui/material'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
 import { useAuthStore } from './auth.store'
+import { ROLE_DEFAULT_ROUTES } from './auth.types'
 
 interface LocationState {
   from?: { pathname: string }
@@ -19,12 +20,14 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
-  const redirectTo = (location.state as LocationState)?.from?.pathname ?? '/'
+  const fromPath = (location.state as LocationState)?.from?.pathname
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     try {
       await login({ email, password })
+      const role = useAuthStore.getState().user?.role
+      const redirectTo = fromPath ?? (role ? ROLE_DEFAULT_ROUTES[role] : '/')
       navigate(redirectTo, { replace: true })
     } catch {
       /* error surfaced via store */
