@@ -3,6 +3,8 @@ using AgriTrace.Application.Common.Exceptions;
 using AgriTrace.Domain.Entities;
 using AgriTrace.Domain.Interfaces;
 using MediatR;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace AgriTrace.Application.Features.Events.Commands;
 
@@ -26,7 +28,25 @@ public sealed class AppendSupplyChainEventCommandHandler(IBatchRepository batche
 
         var lastEvent = batch.Events.OrderBy(e => e.CreatedAt).LastOrDefault();
         var prevHash = lastEvent?.CurrentHash;
-        var currentHash = Guid.NewGuid().ToString("N");
+
+        // Compute SHA-256 CurrentHash based on canonical event data
+        string ComputeEventHash()
+        {
+            var sb = new StringBuilder();
+            sb.Append(batch.Id).Append('|');
+            sb.Append(eventType).Append('|');
+            sb.Append(request.OrganizationId).Append('|');
+            sb.Append(request.PerformedByUserId).Append('|');
+            sb.Append(eventTime.ToString("O")).Append('|');
+            sb.Append(request.AdditionalData ?? string.Empty).Append('|');
+            sb.Append(request.Location ?? string.Empty);
+
+            var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+            var hash = SHA256.HashData(bytes);
+            return Convert.ToHexString(hash);
+        }
+
+        var currentHash = ComputeEventHash();
 
         var newEvent = new SupplyChainEvent(0, batch.Id, eventType, request.OrganizationId,
             request.PerformedByUserId, request.AdditionalData, request.Location, prevHash, currentHash, eventTime);

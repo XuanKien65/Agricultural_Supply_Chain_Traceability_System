@@ -1,4 +1,5 @@
 using AgriTrace.Application.Features.Trace.Queries;
+using Microsoft.AspNetCore.RateLimiting;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,6 +13,7 @@ namespace AgriTrace.API.Controllers;
 [ApiController]
 [Route("api/trace")]
 [AllowAnonymous]
+[EnableRateLimiting("PublicTrace")]
 public sealed class TraceController(ISender sender) : ControllerBase
 {
     /// <summary>
@@ -21,4 +23,8 @@ public sealed class TraceController(ISender sender) : ControllerBase
     [HttpGet("{batchId:int}")]
     public async Task<IActionResult> GetPublicTrace(int batchId, CancellationToken ct) =>
         Ok(await sender.Send(new GetPublicTraceQuery(batchId), ct));
+
+    [HttpGet("{batchId:int}/lineage")]
+    public async Task<IActionResult> GetPublicLineage(int batchId, CancellationToken ct) =>
+        Ok(await sender.Send(new GetPublicLineageQuery(batchId), ct));
 }

@@ -15,6 +15,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<ProductDataModel> Products => Set<ProductDataModel>();
     public DbSet<BatchDataModel> Batches => Set<BatchDataModel>();
     public DbSet<SupplyChainEventDataModel> SupplyChainEvents => Set<SupplyChainEventDataModel>();
+    public DbSet<BatchImageDataModel> BatchImages => Set<BatchImageDataModel>();
+    public DbSet<BatchRelationDataModel> BatchRelations => Set<BatchRelationDataModel>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

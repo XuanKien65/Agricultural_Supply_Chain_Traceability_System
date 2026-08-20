@@ -11,6 +11,12 @@ public interface IBatchRepository
     Task<Batch> AddAsync(Batch batch, CancellationToken cancellationToken = default);
     Task<SupplyChainEvent> AppendEventAsync(Batch batch, SupplyChainEvent supplyChainEvent, CancellationToken cancellationToken = default);
 
+    Task CreateBatchRelationAsync(int sourceBatchId, int targetBatchId, string relationType, decimal? quantity, CancellationToken cancellationToken = default);
+
+    Task AddBatchImageAsync(int batchId, string imageUrl, string? caption, int displayOrder, int? eventId, CancellationToken cancellationToken = default);
+
+    Task<LineageResult?> GetLineageAsync(int batchId, CancellationToken cancellationToken = default);
+
     /// <summary>Tra cứu công khai: Lấy Batch + Events + Inspections + Certificates cho Consumer.</summary>
     Task<TraceResultDto?> GetByIdWithFullTraceAsync(int id, CancellationToken cancellationToken = default);
 }
