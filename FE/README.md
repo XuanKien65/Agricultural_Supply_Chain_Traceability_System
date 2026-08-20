@@ -11,10 +11,12 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-Tài khoản demo:
+Tài khoản test từ seed database BE:
 
-- Admin: **`admin@gmail.com` / `123456`** → `/admin`
-- Farmer: **`farmer@gmail.com` / `123456`** → `/farmer`
+- Admin: **`admin@agritrace.vn` / `P@ssw0rd123`** → `/admin`
+- OrgAdmin: **`orgadmin@sonlafarm.vn` / `P@ssw0rd123`** → `/admin`
+- Farmer: **`farmer@sonlafarm.vn` / `P@ssw0rd123`**
+- Inspector: **`inspector@agritrace.vn` / `P@ssw0rd123`**
 
 ## Scripts
 

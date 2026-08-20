@@ -16,9 +16,7 @@ export const EVENT_TYPE_LABELS: Record<EventType, string> = {
 
 /** Vai trò nào được ghi loại sự kiện nào — khớp BUSINESS_FLOW.md §2. */
 export const ROLE_EVENT_TYPES: Partial<Record<Role, EventType[]>> = {
-  Processor: ['PROCESS', 'PACKAGE'],
-  Distributor: ['TRANSPORT', 'DISTRIBUTE'],
-  Retailer: ['RETAIL'],
+  OPERATOR: ['PROCESS', 'PACKAGE', 'TRANSPORT', 'DISTRIBUTE', 'RETAIL'],
 }
 
 export interface BatchEvent {

@@ -1,10 +1,14 @@
 import {
   ApartmentRounded,
   DashboardRounded,
+  AnalyticsRounded,
   Inventory2Rounded,
   ListAltRounded,
+  NotificationsRounded,
   PeopleRounded,
   PersonRounded,
+  WarningAmberRounded,
+  VerifiedRounded,
 } from '@mui/icons-material'
 
 import {
@@ -78,6 +82,41 @@ const menuItems = [
       'ADMIN',
       'ORGADMIN',
     ],
+  },
+
+  {
+    label: 'Kiểm định',
+    path: '/admin/quality',
+    icon: <VerifiedRounded />,
+    roles: ['ADMIN', 'INSPECTOR'],
+  },
+
+  {
+    label: 'Thu hồi',
+    path: '/admin/recalls',
+    icon: <WarningAmberRounded />,
+    roles: ['ADMIN', 'INSPECTOR'],
+  },
+
+  {
+    label: 'Chứng nhận',
+    path: '/admin/certificates',
+    icon: <VerifiedRounded />,
+    roles: ['ADMIN', 'INSPECTOR'],
+  },
+
+  {
+    label: 'Thông báo',
+    path: '/admin/notifications',
+    icon: <NotificationsRounded />,
+    roles: ['ADMIN', 'ORGADMIN', 'INSPECTOR'],
+  },
+
+  {
+    label: 'Phân tích',
+    path: '/admin/analytics',
+    icon: <AnalyticsRounded />,
+    roles: ['ADMIN', 'ORGADMIN'],
   },
 
   {

@@ -5,6 +5,17 @@ export type UserRole =
   | 'OPERATOR'
   | 'INSPECTOR'
 
+export type Role = UserRole
+
+export type RegisterableRole =
+  | 'FARMER'
+  | 'OPERATOR'
+
+export const REGISTERABLE_ROLES: RegisterableRole[] = [
+  'FARMER',
+  'OPERATOR',
+]
+
 export type OrganizationType =
   | 'FARM'
   | 'PROCESSOR'
@@ -55,6 +66,7 @@ export interface BackendAuthUser {
 
 export interface LoginPayload {
   email: string
+  username?: string
   password: string
 }
 

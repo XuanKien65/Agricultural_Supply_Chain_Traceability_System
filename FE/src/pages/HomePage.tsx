@@ -124,7 +124,7 @@ export function HomePage() {
             {/* Nút Điều hướng User hoặc Đăng nhập */}
             {user ? (
               <Link
-                to={user.role === 'Admin' ? '/admin' : '/dashboard'}
+                to={user.role === 'ADMIN' || user.role === 'ORGADMIN' ? '/admin' : '/dashboard'}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs sm:text-sm font-semibold hover:bg-emerald-100 transition shadow-sm"
               >
                 <LayoutDashboard className="w-4 h-4" />

@@ -54,8 +54,13 @@ export const authApi = {
           BackendLoginResponse
         >
       >(
-        '/auth/login',
-        payload,
+        '/v1/auth/login',
+        {
+          ...payload,
+          username:
+            payload.username ??
+            payload.email,
+        },
       )
 
     const result =
@@ -84,7 +89,7 @@ export const authApi = {
         ApiEnvelope<
           BackendAuthUser
         >
-      >('/auth/me')
+      >('/v1/auth/me')
 
     return normalizeUser(
       unwrapApi(
@@ -97,7 +102,7 @@ export const authApi = {
     Promise<void> {
     try {
       await http.post(
-        '/auth/logout',
+        '/v1/auth/logout',
       )
     } catch {
       // FE vẫn xóa local session
@@ -110,7 +115,7 @@ export const authApi = {
       ChangePasswordPayload,
   ): Promise<void> {
     await http.put(
-      '/auth/change-password',
+      '/v1/auth/change-password',
       payload,
     )
   },

@@ -14,7 +14,8 @@ import { PageLoader } from '@/components/ui/PageLoader'
 export function MainLayout() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-  const { user, logout } = useAuthStore()
+  const user = useAuthStore((state) => state.user)
+  const clearAuth = useAuthStore((state) => state.clearAuth)
 
   /* ==========================================
    * NEW CODE - Danh sách navigation theo vai trò
@@ -27,6 +28,7 @@ export function MainLayout() {
     { label: 'Sản phẩm', to: '/products', icon: <CategoryRounded fontSize="small" /> },
     { label: 'Kiểm định (QC)', to: '/quality', icon: <FactCheckRounded fontSize="small" /> },
     { label: 'Thu hồi (Recall)', to: '/recalls', icon: <WarningAmberRounded fontSize="small" /> },
+    { label: 'Thông báo thu hồi', to: '/recall-notifications', icon: <WarningAmberRounded fontSize="small" /> },
   ]
   /* ==========================================
    * END NEW CODE
@@ -116,7 +118,7 @@ export function MainLayout() {
             color="inherit"
             sx={{ textTransform: 'none', borderRadius: 2, fontSize: 12 }}
             onClick={() => {
-              logout()
+              clearAuth()
               navigate('/login')
             }}
           >

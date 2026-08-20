@@ -1,5 +1,9 @@
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+
 import {
   LogoutRounded,
+  NotificationsRounded,
 } from '@mui/icons-material'
 
 import {
@@ -9,6 +13,9 @@ import {
   Button,
   Toolbar,
   Typography,
+  Badge,
+  IconButton,
+  Menu,
 } from '@mui/material'
 
 import {
@@ -24,12 +31,37 @@ import {
   useAuthStore,
 } from '@/features/auth/auth.store'
 
+import {
+  notificationsApi,
+} from '@/features/notifications/notifications.api'
+
 import AdminSidebar
   from './AdminSidebar'
 
 export default function AdminLayout() {
   const navigate =
     useNavigate()
+
+  const queryClient =
+    useQueryClient()
+
+  const [notificationAnchor, setNotificationAnchor] =
+    useState<HTMLElement | null>(null)
+
+  const notificationsQuery =
+    useQuery({
+      queryKey: ['notifications'],
+      queryFn: notificationsApi.getAll,
+    })
+
+  const markReadMutation =
+    useMutation({
+      mutationFn: notificationsApi.markRead,
+      onSuccess: () =>
+        void queryClient.invalidateQueries({
+          queryKey: ['notifications'],
+        }),
+    })
 
   const user =
     useAuthStore(
@@ -129,6 +161,93 @@ export default function AdminLayout() {
                 {user?.role}
               </Typography>
             </Box>
+
+            <IconButton
+              color="primary"
+              onClick={(event) =>
+                setNotificationAnchor(
+                  event.currentTarget,
+                )
+              }
+              aria-label="Thông báo"
+            >
+              <Badge
+                color="error"
+                badgeContent={
+                  notificationsQuery.data?.filter(
+                    notification =>
+                      !notification.isRead,
+                  ).length ?? 0
+                }
+              >
+                <NotificationsRounded />
+              </Badge>
+            </IconButton>
+
+            <Menu
+              anchorEl={notificationAnchor}
+              open={Boolean(notificationAnchor)}
+              onClose={() =>
+                setNotificationAnchor(null)
+              }
+              slotProps={{
+                paper: {
+                  sx: {
+                    width: 360,
+                    maxWidth: 'calc(100vw - 32px)',
+                    p: 1,
+                  },
+                },
+              }}
+            >
+              {(notificationsQuery.data ?? []).slice(0, 5).map(notification => (
+                <Box
+                  key={notification.id}
+                  onClick={() => {
+                    if (!notification.isRead) {
+                      markReadMutation.mutate(
+                        notification.id,
+                      )
+                    }
+                  }}
+                  sx={{
+                    p: 1.25,
+                    cursor: 'pointer',
+                    borderRadius: 1,
+                    bgcolor: notification.isRead
+                      ? 'transparent'
+                      : 'success.50',
+                    '&:hover': {
+                      bgcolor: 'action.hover',
+                    },
+                  }}
+                >
+                  <Typography sx={{ fontWeight: 800, fontSize: 14 }}>
+                    {notification.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {notification.message}
+                  </Typography>
+                </Box>
+              ))}
+
+              {!notificationsQuery.data?.length && (
+                <Typography sx={{ p: 2 }} color="text.secondary">
+                  Chưa có thông báo.
+                </Typography>
+              )}
+
+              <Button
+                fullWidth
+                onClick={() => {
+                  setNotificationAnchor(null)
+                  navigate('/admin/notifications')
+                }}
+                sx={{ textTransform: 'none' }}
+              >
+                Xem tất cả thông báo
+              </Button>
+            </Menu>
 
             <Button
               startIcon={

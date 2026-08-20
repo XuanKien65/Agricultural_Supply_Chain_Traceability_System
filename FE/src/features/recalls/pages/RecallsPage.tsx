@@ -1,125 +1,26 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { AlertTriangle } from 'lucide-react'
+import { AddRounded, CheckRounded, WarningAmberRounded } from '@mui/icons-material'
+import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material'
+import { recallsApi, type Recall } from '../recalls.api'
 
-/**
- * RecallsPage - Danh sách các yêu cầu thu hồi sản phẩm
- * Quản lý các lô hàng bị recall do vấn đề chất lượng
- * Cho phép truy vết ngược (traceback) và gửi cảnh báo tới các actor
- */
 export function RecallsPage() {
-  const navigate = useNavigate()
-  const [currentPage, setCurrentPage] = useState(1)
-  const [searchTerm, setSearchTerm] = useState('')
-
-  // NEW CODE - Fetch recalls list
-  const { data, isLoading } = useQuery({
-    queryKey: ['recalls', currentPage, searchTerm],
-    queryFn: async () => {
-      // const response = await recallService.getRecalls({ search: searchTerm, pageNumber: currentPage, pageSize: 10 })
-      // return response
-      return {
-        items: [
-          {
-            id: 'R001',
-            batchId: 'B001',
-            product: 'Dâu tây tươi',
-            reason: 'Phát hiện vi khuẩn Salmonella',
-            status: 'Active',
-            severity: 'High',
-            initiatedDate: new Date().toISOString(),
-            affectedBatches: 3,
-            notifiedUnits: 5,
-          },
-        ],
-        totalCount: 1,
-      }
-    },
-  })
-
-  if (isLoading) return <div>Đang tải...</div>
+  const client = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const [batchId, setBatchId] = useState('')
+  const [reason, setReason] = useState('')
+  const [severity, setSeverity] = useState('HIGH')
+  const query = useQuery({ queryKey: ['recalls'], queryFn: recallsApi.getAll })
+  const create = useMutation({ mutationFn: () => recallsApi.create({ batchId: Number(batchId), reason: reason.trim(), severity }), onSuccess: () => { void client.invalidateQueries({ queryKey: ['recalls'] }); setOpen(false); setBatchId(''); setReason('') } })
+  const resolve = useMutation({ mutationFn: recallsApi.resolve, onSuccess: () => void client.invalidateQueries({ queryKey: ['recalls'] }) })
+  const rows = query.data?.items ?? []
 
   return (
-    <div className="space-y-4">
-      {/* NEW CODE - Recalls management header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <AlertTriangle className="w-6 h-6 text-red-600" />
-          Quản lý Thu hồi Sản phẩm
-        </h1>
-        <Button onClick={() => navigate('/recalls/new')} variant="destructive">
-          + Phát hành Recall
-        </Button>
-      </div>
-
-      <div className="flex gap-2">
-        <Input
-          placeholder="Tìm kiếm mã lô, mã recall..."
-          value={searchTerm}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            setSearchTerm(e.target.value)
-            setCurrentPage(1)
-          }}
-        />
-      </div>
-
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Mã Recall</TableHead>
-            <TableHead>Mã Lô</TableHead>
-            <TableHead>Sản phẩm</TableHead>
-            <TableHead>Lý do Thu hồi</TableHead>
-            <TableHead>Mức độ</TableHead>
-            <TableHead>Trạng thái</TableHead>
-            <TableHead>Lô bị ảnh hưởng</TableHead>
-            <TableHead>Hành động</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data?.items?.map((recall: any) => (
-            <TableRow key={recall.id}>
-              <TableCell className="font-medium">{recall.id}</TableCell>
-              <TableCell>{recall.batchId}</TableCell>
-              <TableCell>{recall.product}</TableCell>
-              <TableCell className="text-sm">{recall.reason}</TableCell>
-              <TableCell>
-                <Badge
-                  variant={
-                    recall.severity === 'High'
-                      ? 'destructive'
-                      : recall.severity === 'Medium'
-                        ? 'secondary'
-                        : 'outline'
-                  }
-                >
-                  {recall.severity === 'High' ? 'Cao' : recall.severity === 'Medium' ? 'Trung bình' : 'Thấp'}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Badge variant={recall.status === 'Active' ? 'destructive' : 'default'}>
-                  {recall.status === 'Active' ? 'Đang hoạt động' : 'Đã hoàn thành'}
-                </Badge>
-              </TableCell>
-              <TableCell>{recall.affectedBatches}</TableCell>
-              <TableCell>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate(`/recalls/${recall.id}`)}
-                >
-                  Chi tiết
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, alignItems: { xs: 'flex-start', md: 'center' }, flexDirection: { xs: 'column', md: 'row' }, mb: 3 }}><Box><Typography variant="h4" sx={{ fontWeight: 900 }}>Thu hồi sản phẩm</Typography><Typography color="text.secondary" sx={{ mt: 0.5 }}>Kích hoạt và theo dõi cảnh báo an toàn thực phẩm.</Typography></Box><Button variant="contained" color="error" startIcon={<AddRounded />} onClick={() => setOpen(true)} sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 800 }}>Phát hành thu hồi</Button></Box>
+      {query.isError && <Alert severity="error" sx={{ mb: 2 }}>Không thể tải danh sách lệnh thu hồi.</Alert>}
+      <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3 }}><Table><TableHead><TableRow sx={{ bgcolor: 'grey.50' }}><TableCell>Mã thu hồi</TableCell><TableCell>Mã lô</TableCell><TableCell>Lý do</TableCell><TableCell>Mức độ</TableCell><TableCell>Ngày tạo</TableCell><TableCell>Trạng thái</TableCell><TableCell align="right">Thao tác</TableCell></TableRow></TableHead><TableBody>{rows.map((recall: Recall) => { const resolved = Boolean(recall.resolvedAt) || recall.status === 'RESOLVED'; return <TableRow key={recall.id} hover><TableCell sx={{ fontWeight: 800 }}>#{recall.id}</TableCell><TableCell>#{recall.batchId}</TableCell><TableCell>{recall.reason}</TableCell><TableCell><Chip icon={<WarningAmberRounded />} label={recall.severity} color={recall.severity === 'CRITICAL' || recall.severity === 'HIGH' ? 'error' : 'warning'} size="small" /></TableCell><TableCell>{new Date(recall.createdAt).toLocaleDateString('vi-VN')}</TableCell><TableCell><Chip label={resolved ? 'Đã giải quyết' : 'Đang cảnh báo'} color={resolved ? 'success' : 'error'} size="small" /></TableCell><TableCell align="right">{!resolved && <Button size="small" startIcon={<CheckRounded />} onClick={() => resolve.mutate(recall.id)} sx={{ textTransform: 'none' }}>Đánh dấu xong</Button>}</TableCell></TableRow> })}{!query.isLoading && rows.length === 0 && <TableRow><TableCell colSpan={7} align="center" sx={{ py: 6, color: 'text.secondary' }}>Chưa có lệnh thu hồi.</TableCell></TableRow>}</TableBody></Table></TableContainer>
+      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm"><DialogTitle sx={{ fontWeight: 900 }}>Phát hành lệnh thu hồi</DialogTitle><DialogContent sx={{ display: 'grid', gap: 2, pt: '12px !important' }}><TextField label="ID lô hàng" type="number" value={batchId} onChange={(event) => setBatchId(event.target.value)} required /><TextField label="Mức độ" select value={severity} onChange={(event) => setSeverity(event.target.value)}><MenuItem value="LOW">LOW - Thấp</MenuItem><MenuItem value="MEDIUM">MEDIUM - Trung bình</MenuItem><MenuItem value="HIGH">HIGH - Cao</MenuItem><MenuItem value="CRITICAL">CRITICAL - Khẩn cấp</MenuItem></TextField><TextField label="Lý do thu hồi" multiline minRows={3} value={reason} onChange={(event) => setReason(event.target.value)} required /></DialogContent><DialogActions sx={{ p: 2 }}><Button onClick={() => setOpen(false)} sx={{ textTransform: 'none' }}>Hủy</Button><Button variant="contained" color="error" disabled={!batchId || !reason.trim() || create.isPending} onClick={() => create.mutate()} sx={{ textTransform: 'none' }}>Xác nhận thu hồi</Button></DialogActions></Dialog>
+    </Box>
   )
 }
