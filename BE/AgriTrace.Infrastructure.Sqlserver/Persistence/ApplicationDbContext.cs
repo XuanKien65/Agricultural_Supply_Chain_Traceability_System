@@ -15,14 +15,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<ProductDataModel> Products => Set<ProductDataModel>();
     public DbSet<BatchDataModel> Batches => Set<BatchDataModel>();
     public DbSet<SupplyChainEventDataModel> SupplyChainEvents => Set<SupplyChainEventDataModel>();
-<<<<<<< HEAD
     public DbSet<BatchImageDataModel> BatchImages => Set<BatchImageDataModel>();
-=======
     public DbSet<InspectionDataModel> Inspections => Set<InspectionDataModel>();
     public DbSet<CertificateDataModel> Certificates => Set<CertificateDataModel>();
     public DbSet<RecallDataModel> Recalls => Set<RecallDataModel>();
     public DbSet<NotificationDataModel> Notifications => Set<NotificationDataModel>();
->>>>>>> 150b01dd3d235ed40d07763be239f6fa227ca543
     public DbSet<BatchRelationDataModel> BatchRelations => Set<BatchRelationDataModel>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
