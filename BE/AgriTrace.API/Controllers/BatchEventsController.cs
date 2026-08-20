@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.Claims;
 using AgriTrace.API.Models;
 using AgriTrace.Application.Features.Batches.Queries;
 using AgriTrace.Application.Features.Events.Commands;
@@ -20,7 +21,7 @@ public sealed class BatchEventsController(ISender sender) : ControllerBase
 
     [HttpPost("{id:int}/events")]
     public async Task<IActionResult> AppendEvent(int id, AppendSupplyChainEventRequest request, CancellationToken ct) =>
-        Ok(await sender.Send(new AppendSupplyChainEventCommand(id, request.OrganizationId, request.PerformedByUserId,
+        Ok(await sender.Send(new AppendSupplyChainEventCommand(id, ResolveOrganizationId(request.OrganizationId), ResolveUserId(request.PerformedByUserId),
             request.EventType, request.EventTime, request.Location, request.AdditionalData), ct));
 
     // Sự kiện append-only — không cho sửa/xoá (BUSINESS_FLOW.md §4, error-codes.md).
@@ -44,13 +45,13 @@ public sealed class BatchEventsController(ISender sender) : ControllerBase
 
     [HttpPost("{id:int}/split")]
     public async Task<IActionResult> SplitBatch(int id, SplitBatchRequest request, CancellationToken ct) =>
-        Ok(await sender.Send(new AgriTrace.Application.Features.Batches.Commands.SplitBatchCommand(id, request.OrganizationId, request.PerformedByUserId,
+        Ok(await sender.Send(new AgriTrace.Application.Features.Batches.Commands.SplitBatchCommand(id, ResolveOrganizationId(request.OrganizationId), ResolveUserId(request.PerformedByUserId),
             request.ChildBatches.Select(x => new AgriTrace.Application.Features.Batches.Commands.SplitChildRequest(x.Quantity)).ToList(), request.Location, request.EventTime), ct));
 
     [HttpPost("merge")]
     public async Task<IActionResult> MergeBatches(MergeBatchesRequest request, CancellationToken ct) =>
         Ok(await sender.Send(new AgriTrace.Application.Features.Batches.Commands.MergeBatchesCommand(request.Sources.Select(s => new AgriTrace.Application.Features.Batches.Commands.MergeSourceRequest(s.BatchId, s.Quantity)).ToList(),
-            request.OrganizationId, request.PerformedByUserId, request.Location, request.Description, request.EventTime), ct));
+            ResolveOrganizationId(request.OrganizationId), ResolveUserId(request.PerformedByUserId), request.Location, request.Description, request.EventTime), ct));
 
     [HttpGet("{id:int}/qr-code")]
     public async Task<IActionResult> GetQrCode(int id, CancellationToken ct)
@@ -139,5 +140,23 @@ public sealed class BatchEventsController(ISender sender) : ControllerBase
         await sender.Send(new AgriTrace.Application.Features.Images.Commands.UploadBatchImageCommand(id, publicUrl, caption, displayOrder, eventId), CancellationToken.None);
 
         return Created(string.Empty, ApiResponse.Ok(new { imageUrl = publicUrl }));
+    }
+
+    /// <summary>
+    /// Chặn giả mạo danh tính: người gọi không phải ADMIN luôn ghi sự kiện bằng chính tổ
+    /// chức/tài khoản của mình (lấy từ JWT), bỏ qua giá trị OrganizationId client tự truyền.
+    /// </summary>
+    private int ResolveOrganizationId(int requested)
+    {
+        if (User.IsInRole("ADMIN")) return requested;
+        var claim = User.FindFirstValue("organizationId");
+        return int.TryParse(claim, out var id) ? id : 0;
+    }
+
+    private int ResolveUserId(int requested)
+    {
+        if (User.IsInRole("ADMIN")) return requested;
+        var claim = User.FindFirstValue("userId") ?? User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        return int.TryParse(claim, out var id) ? id : requested;
     }
 }

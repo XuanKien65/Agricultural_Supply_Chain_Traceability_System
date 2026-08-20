@@ -33,6 +33,7 @@ public sealed class UsersController(ISender sender) : ControllerBase
     /// GET /users/{userId} - Chi tiết người dùng.
     /// </summary>
     [HttpGet("{userId:int}")]
+    [Authorize(Roles = "ADMIN,ORGADMIN")]
     public async Task<IActionResult> GetUserById(int userId, CancellationToken ct) =>
         Ok(ApiResponse.Ok(await sender.Send(new GetUserByIdQuery(userId), ct)));
 
@@ -51,6 +52,7 @@ public sealed class UsersController(ISender sender) : ControllerBase
     /// PUT /users/{userId} - Cập nhật người dùng.
     /// </summary>
     [HttpPut("{userId:int}")]
+    [Authorize(Roles = "ADMIN,ORGADMIN")]
     public async Task<IActionResult> UpdateUser(int userId, [FromBody] UpdateUserRequest request, CancellationToken ct) =>
         Ok(ApiResponse.Ok(await sender.Send(new UpdateUserCommand(userId, request.FullName, request.Role), ct), "Cập nhật người dùng thành công"));
 

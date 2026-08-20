@@ -118,20 +118,32 @@ export const router = createBrowserRouter([
             element: <RoleRoute roles={['FARMER', 'OPERATOR', 'INSPECTOR', 'ADMIN']} />,
             children: [
               { path: 'dashboard', element: <ActorDashboardPage /> },
-              { path: 'farmer', element: <FarmerDashboardPage /> },
               { path: 'batches', element: <BatchesPage /> },
               { path: 'batches/:batchId', element: <BatchDetailPage /> },
               { path: 'products', element: <ProductsPage /> },
-              { path: 'products/new', element: <CreateProductPage /> },
               { path: 'products/:productId', element: <ProductDetailPage /> },
             ],
           },
 
-          // Quyền riêng của Farmer
+          // Quyền riêng của Farmer — khớp BE FarmerBatchesController (Roles="FARMER,ADMIN")
+          {
+            element: <RoleRoute roles={['FARMER', 'ADMIN']} />,
+            children: [
+              { path: 'farmer', element: <FarmerDashboardPage /> },
+            ],
+          },
           {
             element: <RoleRoute roles={['FARMER']} />,
             children: [
               { path: 'batches/new', element: <CreateBatchPage /> },
+            ],
+          },
+
+          // Quản lý sản phẩm — khớp BE ProductsController (POST/PUT: Roles="ADMIN,ORGADMIN")
+          {
+            element: <RoleRoute roles={['ADMIN']} />,
+            children: [
+              { path: 'products/new', element: <CreateProductPage /> },
             ],
           },
 

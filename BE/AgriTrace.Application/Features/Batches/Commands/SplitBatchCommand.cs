@@ -28,6 +28,9 @@ public sealed class SplitBatchCommandHandler(IBatchRepository batches, IUserRepo
         if (user is null || user.OrganizationId != request.OrganizationId)
             throw new ForbiddenException("Người thực hiện không thuộc đơn vị thực hiện.");
 
+        if (parent.CurrentOrganizationId != request.OrganizationId)
+            throw new ForbiddenException("Chỉ đơn vị đang giữ lô hàng mới được phép tách lô.");
+
         var total = request.ChildBatches.Sum(x => x.Quantity);
         if (total > parent.Quantity)
             throw new InvalidOperationException("Tổng số lượng lô con vượt quá số lượng lô cha.");

@@ -16,24 +16,41 @@ export function MainLayout() {
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
 
-  /* ==========================================
-   * NEW CODE - Danh sách navigation theo vai trò
-   * ========================================== */
+  // Mỗi mục chỉ hiện với vai trò thực sự truy cập được route đó (khớp app/router.tsx)
+  const role = user?.role
+  const canSeeChainPages = role === 'FARMER' || role === 'OPERATOR' || role === 'INSPECTOR' || role === 'ADMIN'
+  const canRecordEvent = role === 'FARMER' || role === 'OPERATOR'
+  const canQuality = role === 'INSPECTOR' || role === 'ADMIN'
+
+  const analyticsItem =
+    role === 'ADMIN'
+      ? { label: 'Phân tích', to: '/analytics/overview', icon: <InsightsRounded fontSize="small" /> }
+      : role === 'ORGADMIN'
+        ? { label: 'Phân tích', to: '/analytics/batch-distribution', icon: <InsightsRounded fontSize="small" /> }
+        : role === 'INSPECTOR'
+          ? { label: 'Truy vết ngược', to: '/analytics/traceback', icon: <InsightsRounded fontSize="small" /> }
+          : null
+
   const navItems = [
     { label: 'Trang chủ', to: '/', icon: <HomeRounded fontSize="small" /> },
-    { label: 'Bảng điều khiển', to: '/dashboard', icon: <DashboardRounded fontSize="small" /> },
-    { label: 'Lô hàng', to: '/batches', icon: <Inventory2Rounded fontSize="small" /> },
-    { label: 'Ghi nhận sự kiện', to: '/record-event', icon: <TimelineRounded fontSize="small" /> },
-    { label: 'Sản phẩm', to: '/products', icon: <CategoryRounded fontSize="small" /> },
-    { label: 'Kiểm định (QC)', to: '/quality', icon: <FactCheckRounded fontSize="small" /> },
-    { label: 'Thu hồi (Recall)', to: '/recalls', icon: <WarningAmberRounded fontSize="small" /> },
-    ...(user && ['ADMIN', 'ORGADMIN', 'INSPECTOR'].includes(user.role)
-      ? [{ label: 'Phân tích', to: '/analytics/overview', icon: <InsightsRounded fontSize="small" /> }]
+    ...(canSeeChainPages
+      ? [
+          { label: 'Bảng điều khiển', to: '/dashboard', icon: <DashboardRounded fontSize="small" /> },
+          { label: 'Lô hàng', to: '/batches', icon: <Inventory2Rounded fontSize="small" /> },
+          { label: 'Sản phẩm', to: '/products', icon: <CategoryRounded fontSize="small" /> },
+        ]
       : []),
+    ...(canRecordEvent
+      ? [{ label: 'Ghi nhận sự kiện', to: '/record-event', icon: <TimelineRounded fontSize="small" /> }]
+      : []),
+    ...(canQuality
+      ? [
+          { label: 'Kiểm định (QC)', to: '/quality', icon: <FactCheckRounded fontSize="small" /> },
+          { label: 'Thu hồi (Recall)', to: '/recalls', icon: <WarningAmberRounded fontSize="small" /> },
+        ]
+      : []),
+    ...(analyticsItem ? [analyticsItem] : []),
   ]
-  /* ==========================================
-   * END NEW CODE
-   * ========================================== */
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#F8FAFC', display: 'flex', flexDirection: 'column' }}>

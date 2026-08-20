@@ -22,6 +22,10 @@ public sealed class MergeBatchesCommandHandler(IBatchRepository batches, IProduc
         if (request.Sources == null || request.Sources.Count == 0)
             throw new InvalidOperationException("Không có lô nguồn để gộp.");
 
+        var user = await users.GetByIdAsync(request.PerformedByUserId, ct);
+        if (user is null || user.OrganizationId != request.OrganizationId)
+            throw new ForbiddenException("Người thực hiện không thuộc đơn vị thực hiện.");
+
         var first = await batches.GetByIdAsync(request.Sources[0].BatchId, ct)
             ?? throw new NotFoundException("Lô nguồn không tồn tại.");
 
@@ -29,6 +33,8 @@ public sealed class MergeBatchesCommandHandler(IBatchRepository batches, IProduc
         foreach (var src in request.Sources)
         {
             var b = await batches.GetByIdAsync(src.BatchId, ct) ?? throw new NotFoundException($"Lô {src.BatchId} không tồn tại.");
+            if (b.CurrentOrganizationId != request.OrganizationId)
+                throw new ForbiddenException($"Chỉ đơn vị đang giữ lô {src.BatchId} mới được phép gộp lô này.");
             if (b.ProductId != productId) throw new InvalidOperationException("Các lô nguồn không cùng sản phẩm.");
             if (src.Quantity > b.Quantity) throw new InvalidOperationException($"Số lượng lấy từ lô {src.BatchId} vượt quá lượng hiện có.");
         }
