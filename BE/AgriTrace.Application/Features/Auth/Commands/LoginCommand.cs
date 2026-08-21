@@ -11,7 +11,7 @@ public record LogoutCommand(string RefreshToken) : IRequest;
 public record ChangePasswordCommand(int UserId, string CurrentPassword, string NewPassword, string ConfirmNewPassword) : IRequest;
 public record GetCurrentUserQuery(int UserId) : IRequest<AuthUserDto>;
 
-public sealed class AuthCommandHandler(IUserRepository users, IJwtTokenService jwtService)
+public sealed class AuthCommandHandler(IUserRepository users, IJwtTokenService jwtService, IRefreshTokenRepository refreshTokens)
     : IRequestHandler<LoginCommand, LoginResultDto>,
       IRequestHandler<RefreshTokenCommand, RefreshTokenResultDto>,
       IRequestHandler<LogoutCommand>,
@@ -53,6 +53,8 @@ public sealed class AuthCommandHandler(IUserRepository users, IJwtTokenService j
         var accessExpires = DateTime.UtcNow.AddHours(1);
         var refreshExpires = DateTime.UtcNow.AddDays(7);
 
+        await refreshTokens.AddAsync(user.Id, refreshToken, refreshExpires, ct);
+
         return new LoginResultDto(
             AccessToken: token,
             AccessTokenExpiresAt: accessExpires,
@@ -63,27 +65,41 @@ public sealed class AuthCommandHandler(IUserRepository users, IJwtTokenService j
                 user.OrganizationId, user.OrganizationName, user.OrganizationType));
     }
 
-    public Task<RefreshTokenResultDto> Handle(RefreshTokenCommand request, CancellationToken ct)
+    public async Task<RefreshTokenResultDto> Handle(RefreshTokenCommand request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(request.RefreshToken))
             throw new ArgumentException("Refresh token là bắt buộc.");
 
-        // Generates new token pair (Token Rotation)
+        var record = await refreshTokens.GetAsync(request.RefreshToken, ct);
+        if (record is null || record.RevokedAt is not null || record.ExpiresAt < DateTime.UtcNow)
+            throw new UnauthorizedAccessException("Refresh token không hợp lệ hoặc đã hết hạn.");
+
+        var user = await users.GetByIdAsync(record.UserId, ct)
+            ?? throw new UnauthorizedAccessException("Không tìm thấy người dùng.");
+        if (!user.IsActive)
+            throw new UnauthorizedAccessException("Tài khoản đã bị khóa.");
+
+        // Token Rotation: thu hồi refresh token cũ, cấp cặp token mới
+        await refreshTokens.RevokeAsync(request.RefreshToken, ct);
+
+        var newAccessToken = jwtService.GenerateToken(user);
+        var newRefreshToken = jwtService.GenerateRefreshToken();
         var accessExpires = DateTime.UtcNow.AddHours(1);
         var refreshExpires = DateTime.UtcNow.AddDays(7);
 
-        var newRefreshToken = jwtService.GenerateRefreshToken();
-        return Task.FromResult(new RefreshTokenResultDto(
-            AccessToken: "new_rotated_access_token",
+        await refreshTokens.AddAsync(user.Id, newRefreshToken, refreshExpires, ct);
+
+        return new RefreshTokenResultDto(
+            AccessToken: newAccessToken,
             AccessTokenExpiresAt: accessExpires,
             RefreshToken: newRefreshToken,
-            RefreshTokenExpiresAt: refreshExpires));
+            RefreshTokenExpiresAt: refreshExpires);
     }
 
-    public Task Handle(LogoutCommand request, CancellationToken ct)
+    public async Task Handle(LogoutCommand request, CancellationToken ct)
     {
-        // Logout revokes refresh token
-        return Task.CompletedTask;
+        if (!string.IsNullOrWhiteSpace(request.RefreshToken))
+            await refreshTokens.RevokeAsync(request.RefreshToken, ct);
     }
 
     public async Task Handle(ChangePasswordCommand request, CancellationToken ct)

@@ -15,8 +15,8 @@ public interface IBatchRepository
 
     Task AddBatchImageAsync(int batchId, string imageUrl, string? caption, int displayOrder, int? eventId, CancellationToken cancellationToken = default);
 
-    Task<LineageResult?> GetLineageAsync(int batchId, CancellationToken cancellationToken = default);
+    Task<LineageResult?> GetLineageAsync(string batchIdOrCode, CancellationToken cancellationToken = default);
 
-    /// <summary>Tra cứu công khai: Lấy Batch + Events + Inspections + Certificates cho Consumer.</summary>
-    Task<TraceResultDto?> GetByIdWithFullTraceAsync(int id, CancellationToken cancellationToken = default);
+    /// <summary>Tra cứu công khai: Lấy Batch + Events + Inspections + Certificates cho Consumer theo BatchCode / Id / QRCode.</summary>
+    Task<TraceResultDto?> GetByIdWithFullTraceAsync(string batchIdOrCode, CancellationToken cancellationToken = default);
 }

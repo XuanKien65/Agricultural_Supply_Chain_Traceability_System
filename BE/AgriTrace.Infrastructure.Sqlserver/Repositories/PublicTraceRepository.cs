@@ -7,15 +7,22 @@ namespace AgriTrace.Infrastructure.Sqlserver.Repositories;
 
 public sealed class PublicTraceRepository(ApplicationDbContext db) : IPublicTraceRepository
 {
-    public async Task<PublicTraceDto?> GetPublicTraceAsync(int batchId, CancellationToken ct = default)
+    public async Task<PublicTraceDto?> GetPublicTraceAsync(string batchIdOrCode, CancellationToken ct = default)
     {
+        var trimmed = batchIdOrCode.Trim();
+        int? numericId = int.TryParse(trimmed, out var val) ? val : null;
+
         var batch = await db.Batches
             .AsNoTracking()
             .Include(b => b.Product)
             .Include(b => b.CurrentOrganization)
-            .FirstOrDefaultAsync(b => b.Id == batchId, ct);
+            .FirstOrDefaultAsync(b =>
+                b.BatchCode == trimmed ||
+                (numericId.HasValue && b.Id == numericId.Value) ||
+                (b.QRCode != null && b.QRCode.Contains(trimmed)), ct);
 
         if (batch is null) return null;
+        var batchId = batch.Id;
 
         var batchDto = new PublicBatchDto(
             batch.Id,
@@ -79,10 +86,19 @@ public sealed class PublicTraceRepository(ApplicationDbContext db) : IPublicTrac
         return new PublicTraceDto(batchDto, events, inspections, certificates, recalls);
     }
 
-    public async Task<LineageDto?> GetLineageAsync(int batchId, CancellationToken ct = default)
+    public async Task<LineageDto?> GetLineageAsync(string batchIdOrCode, CancellationToken ct = default)
     {
-        var targetBatch = await db.Batches.AsNoTracking().FirstOrDefaultAsync(b => b.Id == batchId, ct);
+        var trimmed = batchIdOrCode.Trim();
+        int? numericId = int.TryParse(trimmed, out var val) ? val : null;
+
+        var targetBatch = await db.Batches.AsNoTracking()
+            .FirstOrDefaultAsync(b =>
+                b.BatchCode == trimmed ||
+                (numericId.HasValue && b.Id == numericId.Value) ||
+                (b.QRCode != null && b.QRCode.Contains(trimmed)), ct);
+
         if (targetBatch is null) return null;
+        var batchId = targetBatch.Id;
 
         var visitedBatchIds = new HashSet<int> { batchId };
         var queue = new Queue<int>();

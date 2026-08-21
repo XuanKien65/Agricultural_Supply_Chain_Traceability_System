@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using AgriTrace.Domain.Common;
 using AgriTrace.Domain.Contracts;
 using AgriTrace.Domain.Interfaces;
 using AgriTrace.Infrastructure.Sqlserver.Models;
@@ -80,7 +81,7 @@ public sealed class InspectionRepository(ApplicationDbContext db) : IInspectionR
             .FirstOrDefaultAsync(ct);
 
         var prevHash = lastEvent?.CurrentHash;
-        var rawData = $"{prevHash}|{batchId}|INSPECT|{inspector.OrganizationId ?? batch.CurrentOrganizationId ?? 0}|{inspectorId}|{now:O}|{notes}";
+        var rawData = $"{prevHash}|{batchId}|INSPECT|{inspector.OrganizationId ?? batch.CurrentOrganizationId ?? 0}|{inspectorId}|{HashCanonical.Timestamp(now)}|{notes}";
         var currentHash = ComputeSha256Hash(rawData);
 
         var chainEvent = new SupplyChainEventDataModel

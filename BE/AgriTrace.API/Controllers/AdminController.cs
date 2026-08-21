@@ -8,7 +8,7 @@ namespace AgriTrace.API.Controllers;
 
 [ApiController]
 [Route("api/admin")]
-[Authorize(Roles = "ADMIN")]
+[Authorize(Roles = "ADMIN,ORGADMIN")]
 public sealed class AdminController(
     ISender sender)
     : ControllerBase

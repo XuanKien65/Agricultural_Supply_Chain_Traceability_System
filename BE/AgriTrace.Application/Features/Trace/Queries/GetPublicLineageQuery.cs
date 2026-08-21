@@ -4,7 +4,7 @@ using MediatR;
 
 namespace AgriTrace.Application.Features.Trace.Queries;
 
-public record GetPublicLineageQuery(int BatchId) : IRequest<LineageResult>;
+public record GetPublicLineageQuery(string BatchId) : IRequest<LineageResult>;
 
 public sealed class GetPublicLineageQueryHandler(IBatchRepository batches)
     : IRequestHandler<GetPublicLineageQuery, LineageResult>

@@ -1,4 +1,5 @@
 using AgriTrace.Application.Common.Exceptions;
+using AgriTrace.Domain.Common;
 using AgriTrace.Domain.Entities;
 using AgriTrace.Domain.Interfaces;
 using MediatR;
@@ -49,7 +50,7 @@ public sealed class MergeBatchesCommandHandler(IBatchRepository batches, IProduc
         var eventTime = request.EventTime ?? now;
         var eventData = JsonSerializer.Serialize(request.Sources);
 
-        var canonical = $"{saved.Id}|MERGE|{request.OrganizationId}|{request.PerformedByUserId}|{eventTime:O}|{eventData}|{request.Location}";
+        var canonical = $"{saved.Id}|MERGE|{request.OrganizationId}|{request.PerformedByUserId}|{HashCanonical.Timestamp(eventTime)}|{eventData}|{request.Location}";
         var currentHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(canonical)));
         
         var ev = new SupplyChainEvent(0, saved.Id, "MERGE", request.OrganizationId, request.PerformedByUserId,

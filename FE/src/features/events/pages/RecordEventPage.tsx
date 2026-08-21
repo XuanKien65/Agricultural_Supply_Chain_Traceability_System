@@ -1,11 +1,20 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Alert, Box, Button, Paper, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, MenuItem, Paper, TextField, Typography } from '@mui/material'
+import { QrCodeScannerRounded } from '@mui/icons-material'
 import { StatusChip } from '@/components/ui/StatusChip'
 import { useAuthStore } from '@/features/auth/auth.store'
+import { QrScannerDialog } from '@/features/batches/components/QrScannerDialog'
 import { EventTimeline } from '../components/EventTimeline'
 import { useAppendEvent, useBatch } from '../events.queries'
-import { EVENT_ORDER, EVENT_TYPE_LABELS, ROLE_EVENT_TYPES } from '../events.types'
+import { EVENT_TYPE_LABELS, ORG_TYPE_EVENT_TYPES, type EventType } from '../events.types'
+
+/** Sự kiện tự do chọn (không theo thứ tự cứng) — SPLIT/MERGE có màn riêng, HARVEST tự sinh khi tạo lô. */
+function allowedEventTypes(organizationType: string | null | undefined): EventType[] {
+  if (!organizationType) return []
+  const types = ORG_TYPE_EVENT_TYPES[organizationType] ?? []
+  return types.filter((t) => t !== 'SPLIT' && t !== 'MERGE' && t !== 'HARVEST')
+}
 
 export function RecordEventPage() {
   const params = useParams<{ batchId?: string }>()
@@ -14,28 +23,31 @@ export function RecordEventPage() {
 
   const batchId = Number(params.batchId) || 0
   const [batchIdInput, setBatchIdInput] = useState(params.batchId ?? '')
+  const [scannerOpen, setScannerOpen] = useState(false)
   const { data: batch, isLoading, isError, error } = useBatch(batchId)
   const appendEvent = useAppendEvent(batchId)
+
+  const eligibleTypes = allowedEventTypes(user?.organizationType)
+  const [eventType, setEventType] = useState<EventType | ''>('')
   const [form, setForm] = useState({ location: '', additionalData: '' })
+
+  useEffect(() => {
+    setEventType(eligibleTypes[0] ?? '')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [batchId])
 
   function search(e: FormEvent) {
     e.preventDefault()
-    if (batchIdInput.trim()) navigate(`/events/${batchIdInput.trim()}`)
+    if (batchIdInput.trim()) navigate(`/record-event/${batchIdInput.trim()}`)
   }
-
-  const lastType = batch?.events.at(-1)?.eventType
-  const lastIndex = lastType ? EVENT_ORDER.indexOf(lastType) : -1
-  const nextType = lastIndex >= 0 && lastIndex + 1 < EVENT_ORDER.length ? EVENT_ORDER[lastIndex + 1] : null
-  const allowedTypes = user ? (ROLE_EVENT_TYPES[user.role] ?? []) : []
-  const canRecord = !!nextType && allowedTypes.includes(nextType)
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    if (!user?.organizationId || !nextType) return
+    if (!user?.organizationId || !eventType) return
     await appendEvent.mutateAsync({
       organizationId: user.organizationId,
       performedByUserId: user.id,
-      eventType: nextType,
+      eventType,
       location: form.location || undefined,
       additionalData: form.additionalData || undefined,
     })
@@ -51,7 +63,7 @@ export function RecordEventPage() {
         Ghi nhận sự kiện
       </Typography>
       <Typography color="text.secondary" sx={{ mb: 3 }}>
-        Tra cứu lô hàng theo mã số và ghi nhận công đoạn tiếp theo trong hành trình.
+        Tra cứu lô hàng theo mã số (hoặc quét QR) và ghi nhận công đoạn của đơn vị bạn.
       </Typography>
 
       <Paper component="form" onSubmit={search} sx={{ p: 2, mb: 3, display: 'flex', gap: 1 }}>
@@ -66,7 +78,19 @@ export function RecordEventPage() {
         <Button type="submit" variant="contained">
           Tra cứu
         </Button>
+        <Button variant="outlined" startIcon={<QrCodeScannerRounded />} onClick={() => setScannerOpen(true)}>
+          Quét QR
+        </Button>
       </Paper>
+
+      <QrScannerDialog
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onScanned={(id) => {
+          setScannerOpen(false)
+          navigate(`/record-event/${id}`)
+        }}
+      />
 
       {isLoading && batchId > 0 && <Typography>Đang tải…</Typography>}
       {isError && <Alert severity="error">{error instanceof Error ? error.message : 'Không tìm thấy lô hàng.'}</Alert>}
@@ -96,19 +120,31 @@ export function RecordEventPage() {
 
           <Paper sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
             <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
-              Ghi nhận công đoạn tiếp theo
+              Ghi nhận công đoạn
             </Typography>
 
-            {!nextType && <Alert severity="success">Lô hàng đã hoàn tất toàn bộ chuỗi cung ứng.</Alert>}
-
-            {nextType && !canRecord && (
+            {eligibleTypes.length === 0 && (
               <Alert severity="info">
-                Lô hàng đang chờ công đoạn &quot;{EVENT_TYPE_LABELS[nextType]}&quot; — không thuộc vai trò của bạn.
+                Vai trò/tổ chức của bạn ({user?.organizationType ?? user?.role ?? '—'}) không có loại sự kiện nào để
+                ghi nhận ở đây. Sơ chế/Đóng gói/Vận chuyển/Nhận hàng chỉ dành cho tài khoản OPERATOR thuộc tổ chức
+                PROCESSOR/DISTRIBUTOR/RETAILER.
               </Alert>
             )}
 
-            {nextType && canRecord && (
+            {eligibleTypes.length > 0 && (
               <Box component="form" onSubmit={submit} sx={{ display: 'grid', gap: 2 }}>
+                <TextField
+                  select
+                  label="Loại sự kiện"
+                  value={eventType}
+                  onChange={(e) => setEventType(e.target.value as EventType)}
+                >
+                  {eligibleTypes.map((t) => (
+                    <MenuItem key={t} value={t}>
+                      {EVENT_TYPE_LABELS[t]}
+                    </MenuItem>
+                  ))}
+                </TextField>
                 <TextField
                   label="Vị trí"
                   value={form.location}
@@ -126,8 +162,8 @@ export function RecordEventPage() {
                     {appendEvent.error instanceof Error ? appendEvent.error.message : 'Ghi sự kiện thất bại.'}
                   </Alert>
                 )}
-                <Button type="submit" variant="contained" disabled={appendEvent.isPending}>
-                  {appendEvent.isPending ? 'Đang ghi…' : `Ghi nhận: ${EVENT_TYPE_LABELS[nextType]}`}
+                <Button type="submit" variant="contained" disabled={appendEvent.isPending || !eventType}>
+                  {appendEvent.isPending ? 'Đang ghi…' : `Ghi nhận: ${eventType ? EVENT_TYPE_LABELS[eventType] : ''}`}
                 </Button>
               </Box>
             )}

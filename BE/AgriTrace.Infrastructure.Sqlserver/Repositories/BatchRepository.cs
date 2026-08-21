@@ -91,8 +91,9 @@ public sealed class BatchRepository(ApplicationDbContext db) : IBatchRepository
             row.EventData, row.Location, row.PreviousHash, row.CurrentHash, row.CreatedAt);
     }
 
-    public async Task<TraceResultDto?> GetByIdWithFullTraceAsync(int id, CancellationToken ct = default)
+    public async Task<TraceResultDto?> GetByIdWithFullTraceAsync(string batchIdOrCode, CancellationToken ct = default)
     {
+        var trimmed = batchIdOrCode.Trim();
         var conn = db.Database.GetDbConnection();
         await conn.OpenAsync(ct);
 
@@ -105,18 +106,21 @@ public sealed class BatchRepository(ApplicationDbContext db) : IBatchRepository
                 FROM Batches b
                 JOIN Products p ON p.Id = b.ProductId
                 LEFT JOIN Organizations o ON o.Id = b.CurrentOrganizationId
-                WHERE b.Id = @id";
-            var p = cmd.CreateParameter(); p.ParameterName = "@id"; p.Value = id;
+                WHERE b.BatchCode = @code 
+                   OR (TRY_CAST(@code AS INT) IS NOT NULL AND b.Id = TRY_CAST(@code AS INT))
+                   OR (b.QRCode IS NOT NULL AND b.QRCode LIKE '%' + @code + '%')";
+            var p = cmd.CreateParameter(); p.ParameterName = "@code"; p.Value = trimmed;
             cmd.Parameters.Add(p);
             using var reader = await cmd.ExecuteReaderAsync(ct);
             if (await reader.ReadAsync(ct))
             {
+                var resolvedId = reader.GetInt32(0);
                 batchInfo = new TraceBatchInfo(
-                    reader.GetInt32(0),
+                    resolvedId,
                     reader.GetString(1),
                     reader.IsDBNull(2) ? null : reader.GetString(2),
                     reader.IsDBNull(3) ? "Tổ chức sản xuất" : reader.GetString(3),
-                    reader.IsDBNull(4) ? $"https://agritrace.vn/trace/{id}" : reader.GetString(4),
+                    reader.IsDBNull(4) ? $"https://agritrace.vn/trace/{resolvedId}" : reader.GetString(4),
                     null,
                     reader.GetDecimal(6),
                     reader.GetString(7),
@@ -124,6 +128,7 @@ public sealed class BatchRepository(ApplicationDbContext db) : IBatchRepository
             }
         }
         if (batchInfo is null) return null;
+        var id = batchInfo.Id;
 
         var events = new List<TraceEventDto>();
         var eventMeta = new List<(int OrgId, int UserId)>();
@@ -231,7 +236,7 @@ public sealed class BatchRepository(ApplicationDbContext db) : IBatchRepository
                     sb.Append(e.EventType).Append('|');
                     sb.Append(meta.OrgId).Append('|');
                     sb.Append(meta.UserId).Append('|');
-                    sb.Append(e.EventTime.ToString("O")).Append('|');
+                    sb.Append(HashCanonical.Timestamp(e.EventTime)).Append('|');
                     sb.Append(e.AdditionalData ?? string.Empty).Append('|');
                     sb.Append(e.Location ?? string.Empty);
 
@@ -268,7 +273,6 @@ public sealed class BatchRepository(ApplicationDbContext db) : IBatchRepository
         x.Events.Select(e => new SupplyChainEvent(e.Id, e.BatchId, e.EventType, e.OrganizationId, e.UserId,
             e.EventData, e.Location, e.PreviousHash, e.CurrentHash, e.CreatedAt)));
 
-
     public async Task CreateBatchRelationAsync(int sourceBatchId, int targetBatchId, string relationType, decimal? quantity, CancellationToken ct = default)
     {
         var row = new BatchRelationDataModel
@@ -300,8 +304,20 @@ public sealed class BatchRepository(ApplicationDbContext db) : IBatchRepository
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task<LineageResult?> GetLineageAsync(int batchId, CancellationToken ct = default)
+    public async Task<LineageResult?> GetLineageAsync(string batchIdOrCode, CancellationToken ct = default)
     {
+        var trimmed = batchIdOrCode.Trim();
+        int? numericId = int.TryParse(trimmed, out var val) ? val : null;
+
+        var targetBatch = await db.Batches.AsNoTracking()
+            .FirstOrDefaultAsync(b =>
+                b.BatchCode == trimmed ||
+                (numericId.HasValue && b.Id == numericId.Value) ||
+                (b.QRCode != null && b.QRCode.Contains(trimmed)), ct);
+
+        if (targetBatch is null) return null;
+        var batchId = targetBatch.Id;
+
         var visited = new HashSet<int>();
         var queue = new Queue<int>();
         visited.Add(batchId);
@@ -338,5 +354,5 @@ public sealed class BatchRepository(ApplicationDbContext db) : IBatchRepository
             .ToListAsync(ct);
 
         return new LineageResult(batches, edges);
-    }    
+    }
 }

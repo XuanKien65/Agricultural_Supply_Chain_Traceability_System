@@ -1,4 +1,5 @@
 using AgriTrace.Application.Common.Exceptions;
+using AgriTrace.Domain.Common;
 using AgriTrace.Domain.Interfaces;
 using MediatR;
 using System.Security.Cryptography;
@@ -48,7 +49,7 @@ public sealed class VerifyHashChainQueryHandler(IBatchRepository batches)
                 sb.Append(e.EventType).Append('|');
                 sb.Append(e.OrganizationId).Append('|');
                 sb.Append(e.UserId).Append('|');
-                sb.Append(e.CreatedAt.ToString("O")).Append('|');
+                sb.Append(HashCanonical.Timestamp(e.CreatedAt)).Append('|');
                 sb.Append(e.EventData ?? string.Empty).Append('|');
                 sb.Append(e.Location ?? string.Empty);
 
