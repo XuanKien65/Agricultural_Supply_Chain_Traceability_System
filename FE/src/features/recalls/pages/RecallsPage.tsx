@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Search } from 'lucide-react'
 
 /**
  * RecallsPage - Danh sách các yêu cầu thu hồi sản phẩm
@@ -57,7 +57,8 @@ export function RecallsPage() {
         </Button>
       </div>
 
-      <div className="flex gap-2">
+      <div className="relative max-w-md w-full">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <Input
           placeholder="Tìm kiếm mã lô, mã recall..."
           value={searchTerm}
@@ -65,6 +66,7 @@ export function RecallsPage() {
             setSearchTerm(e.target.value)
             setCurrentPage(1)
           }}
+          className="pl-9 bg-white"
         />
       </div>
 

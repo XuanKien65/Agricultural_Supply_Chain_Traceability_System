@@ -1,3 +1,5 @@
+import { useAuthStore } from '@/features/auth/auth.store'
+
 import {
   useMemo,
   useState,
@@ -106,8 +108,16 @@ export function AdminUsersPage() {
     setActionError,
   ] = useState('')
 
-  const users =
-    usersQuery.data ?? []
+  const currentUser = useAuthStore(state => state.user)
+  const isOrgAdmin = currentUser?.role === 'ORGADMIN'
+
+  const users = useMemo(() => {
+    let list = usersQuery.data ?? []
+    if (isOrgAdmin && currentUser?.organizationId) {
+      list = list.filter(u => u.organizationId === currentUser.organizationId)
+    }
+    return list
+  }, [usersQuery.data, isOrgAdmin, currentUser?.organizationId])
 
   const roles =
     rolesQuery.data ?? []
@@ -141,8 +151,8 @@ export function AdminUsersPage() {
             .includes(q),
       )
     }, [
-      search,
       users,
+      search,
     ])
 
   if (
@@ -212,34 +222,34 @@ export function AdminUsersPage() {
     try {
       setActionError('')
 
+      // Kiểm tra trùng Gmail / Email khách quan trước khi gọi API
+      const targetEmail = data.email.trim().toLowerCase()
+      const isDuplicate = users.some(
+        u => (!editing || u.id !== editing.id) && u.email.trim().toLowerCase() === targetEmail,
+      )
+
+      if (isDuplicate) {
+        setActionError(`Email "${data.email}" đã được đăng ký bởi người dùng khác trên hệ thống. Vui lòng nhập email khác.`)
+        return
+      }
+
       if (editing) {
         await updateUser.mutateAsync({
           id: editing.id,
-          payload:
-            toPayload(data),
+          payload: toPayload(data),
         })
 
-        setMessage(
-          'Đã cập nhật người dùng trong database.',
-        )
+        setMessage('Đã cập nhật người dùng thành công.')
       } else {
-        await createUser.mutateAsync(
-          toPayload(data),
-        )
-
-        setMessage(
-          'Đã tạo người dùng trong database.',
-        )
+        await createUser.mutateAsync(toPayload(data))
+        setMessage('Đã tạo người dùng mới thành công.')
       }
 
       setDialogOpen(false)
       setEditing(null)
     } catch (error) {
-      setActionError(
-        error instanceof Error
-          ? error.message
-          : 'Không lưu được người dùng.',
-      )
+      const errMsg = error instanceof Error ? error.message : 'Không thể lưu thông tin người dùng.'
+      setActionError(errMsg)
     }
   }
 
@@ -366,15 +376,12 @@ export function AdminUsersPage() {
               <IconButton
                 size="small"
                 onClick={() => {
+                  setActionError('')
                   setEditing(row)
-                  setDialogOpen(
-                    true,
-                  )
+                  setDialogOpen(true)
                 }}
               >
-                <EditRounded
-                  fontSize="small"
-                />
+                <EditRounded fontSize="small" />
               </IconButton>
             </Tooltip>
 
@@ -385,18 +392,11 @@ export function AdminUsersPage() {
                   color="error"
                   disabled={
                     !row.isActive ||
-                    deactivateUser
-                      .isPending
+                    deactivateUser.isPending
                   }
-                  onClick={() =>
-                    void deactivate(
-                      row,
-                    )
-                  }
+                  onClick={() => void deactivate(row)}
                 >
-                  <DeleteOutlineRounded
-                    fontSize="small"
-                  />
+                  <DeleteOutlineRounded fontSize="small" />
                 </IconButton>
               </span>
             </Tooltip>
@@ -408,19 +408,15 @@ export function AdminUsersPage() {
   return (
     <>
       <PageHeader
-        title="Quản lý người dùng"
-        description="CRUD Users thật qua API; tạo/sửa sẽ lưu SQL Server nên F5 không mất dữ liệu."
+        title="Quản lý Người dùng & Phân quyền (RBAC)"
         search={search}
-        onSearchChange={
-          setSearch
-        }
+        onSearchChange={setSearch}
         action={
           <Button
             variant="contained"
-            startIcon={
-              <AddRounded />
-            }
+            startIcon={<AddRounded />}
             onClick={() => {
+              setActionError('')
               setEditing(null)
               setDialogOpen(true)
             }}
@@ -430,46 +426,28 @@ export function AdminUsersPage() {
         }
       />
 
-      {actionError && (
-        <Alert
-          severity="error"
-          sx={{
-            mb: 2,
-          }}
-          onClose={() =>
-            setActionError('')
-          }
-        >
-          {actionError}
-        </Alert>
-      )}
-
       <DataTable
         rows={rows}
         columns={columns}
-        getRowId={row =>
-          row.id
-        }
+        getRowId={row => row.id}
       />
 
       <UserDialog
         open={dialogOpen}
         initial={editing}
         roles={roles}
-        organizations={
-          organizations
-        }
+        organizations={organizations}
         saving={
           createUser.isPending ||
           updateUser.isPending
         }
+        error={actionError}
         onClose={() => {
+          setActionError('')
           setDialogOpen(false)
           setEditing(null)
         }}
-        onSave={data =>
-          void save(data)
-        }
+        onSave={data => void save(data)}
       />
 
       <Snackbar

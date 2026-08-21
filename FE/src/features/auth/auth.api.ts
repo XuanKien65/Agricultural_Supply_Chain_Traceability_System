@@ -65,4 +65,20 @@ export const authApi = {
 
     return toAuthUser(data.result)
   },
+
+  /**
+   * Đổi mật khẩu: PUT /api/v1/auth/change-password
+   */
+  async changePassword(payload: {
+    currentPassword: string
+    newPassword: string
+    confirmNewPassword: string
+  }): Promise<void> {
+    const res = await http.put<ApiResponse<unknown>>('/v1/auth/change-password', payload)
+    const data = res.data
+    if (!data.isSuccess) {
+      const msg = data.errorMessages?.[0] || 'Đổi mật khẩu thất bại.'
+      throw new Error(msg)
+    }
+  },
 }

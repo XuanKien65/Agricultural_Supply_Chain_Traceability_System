@@ -8,14 +8,23 @@ import { Package, PlusCircle, ShieldCheck, AlertTriangle, ArrowRight, Truck } fr
  * ActorDashboardPage - Bảng điều khiển tổng quan cho các Actor trong chuỗi cung ứng
  * Hiển thị thống kê nhanh, các lô hàng gần đây và lối tắt thực hiện nghiệp vụ.
  */
+import { useEffect } from 'react'
+import { useAuthStore } from '@/features/auth/auth.store'
+
 export function ActorDashboardPage() {
   const navigate = useNavigate()
+  const user = useAuthStore((state) => state.user)
+
+  useEffect(() => {
+    if (user?.role === 'FARMER') {
+      navigate('/farmer', { replace: true })
+    }
+  }, [user, navigate])
 
   // Fetch dữ liệu tổng quan dashboard
   const { data: stats, isLoading } = useQuery({
     queryKey: ['actor-dashboard-stats'],
     queryFn: async () => {
-      // Thay thế bằng API thực tế của bạn sau này
       return {
         totalBatches: 24,
         activeBatches: 18,
@@ -34,18 +43,45 @@ export function ActorDashboardPage() {
     return <div className="p-6 text-center text-gray-500">Đang tải bảng điều khiển...</div>
   }
 
+  const isFarmer = user?.role === 'FARMER'
+  const isOperator = user?.role === 'OPERATOR'
+  const isInspector = user?.role === 'INSPECTOR'
+  const isOrgAdmin = user?.role === 'ORGADMIN'
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Bảng Điều Khiển Chuỗi Cung Ứng</h1>
           <p className="text-sm text-gray-500">Quản lý lô hàng, ghi nhận sự kiện và theo dõi tiến độ công đoạn.</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => navigate('/batches/new')} className="gap-2">
-            <PlusCircle className="w-4 h-4" /> Tạo Lô Hàng Mới
-          </Button>
+          {isFarmer && (
+            <Button onClick={() => navigate('/batches/new')} className="gap-2">
+              <PlusCircle className="w-4 h-4" /> Tạo Lô Hàng Mới
+            </Button>
+          )}
+          {(isOperator || isFarmer) && (
+            <Button onClick={() => navigate('/record-event')} className="gap-2" variant="outline">
+              <Truck className="w-4 h-4" /> Ghi Nhận Sự Kiện
+            </Button>
+          )}
+          {isInspector && (
+            <>
+              <Button onClick={() => navigate('/quality/new')} className="gap-2">
+                <ShieldCheck className="w-4 h-4" /> Tạo Kiểm Định Mới
+              </Button>
+              <Button onClick={() => navigate('/recalls/new')} className="gap-2" variant="outline">
+                <AlertTriangle className="w-4 h-4 text-red-600" /> Kích Hoạt Thu Hồi
+              </Button>
+            </>
+          )}
+          {isOrgAdmin && (
+            <Button onClick={() => navigate('/admin/organization')} className="gap-2">
+              <Package className="w-4 h-4" /> Tổ Chức Của Tôi
+            </Button>
+          )}
         </div>
       </div>
 
@@ -142,22 +178,68 @@ export function ActorDashboardPage() {
             <CardDescription>Truy cập nhanh các chức năng nghiệp vụ</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-2"
-              onClick={() => navigate('/batches/new')}
-            >
-              <PlusCircle className="w-4 h-4 text-green-600" />
-              Tạo lô hàng mới & Sinh mã QR
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-2"
-              onClick={() => navigate('/events')}
-            >
-              <Truck className="w-4 h-4 text-blue-600" />
-              Ghi nhận sự kiện chuỗi cung ứng
-            </Button>
+            {isFarmer && (
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                onClick={() => navigate('/batches/new')}
+              >
+                <PlusCircle className="w-4 h-4 text-green-600" />
+                Tạo lô hàng mới & Sinh mã QR
+              </Button>
+            )}
+
+            {(isFarmer || isOperator) && (
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                onClick={() => navigate('/record-event')}
+              >
+                <Truck className="w-4 h-4 text-blue-600" />
+                Ghi nhận sự kiện chuỗi cung ứng
+              </Button>
+            )}
+
+            {isInspector && (
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                onClick={() => navigate('/quality/new')}
+              >
+                <ShieldCheck className="w-4 h-4 text-green-600" />
+                Tạo kiểm định chất lượng mới
+              </Button>
+            )}
+
+            {isOrgAdmin && (
+              <>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() => navigate('/admin/organization')}
+                >
+                  <Package className="w-4 h-4 text-green-600" />
+                  Xem thông tin Tổ chức của tôi
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() => navigate('/admin/users')}
+                >
+                  <PlusCircle className="w-4 h-4 text-blue-600" />
+                  Quản lý thành viên nội bộ
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() => navigate('/admin/products')}
+                >
+                  <Package className="w-4 h-4 text-purple-600" />
+                  Danh mục sản phẩm nông sản
+                </Button>
+              </>
+            )}
+
             <Button
               variant="outline"
               className="w-full justify-start gap-2"
@@ -166,6 +248,7 @@ export function ActorDashboardPage() {
               <ShieldCheck className="w-4 h-4 text-amber-600" />
               Kiểm định chất lượng (QC)
             </Button>
+
             <Button
               variant="outline"
               className="w-full justify-start gap-2"

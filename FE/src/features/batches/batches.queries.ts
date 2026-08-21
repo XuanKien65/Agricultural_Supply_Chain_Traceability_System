@@ -33,11 +33,11 @@ export function useFarmerBatch(id: number, orgId: number) {
   })
 }
 
-export function useBatch(id: number) {
+export function useBatch(id: number | string, codeStr?: string) {
   return useQuery({
-    queryKey: batchKeys.detail(id),
-    queryFn: () => batchesApi.getBatch(id),
-    enabled: id > 0,
+    queryKey: ['batch', id, codeStr],
+    queryFn: () => batchesApi.getBatch(id, codeStr),
+    enabled: true,
     retry: false,
   })
 }

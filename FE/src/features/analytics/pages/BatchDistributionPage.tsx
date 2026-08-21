@@ -3,9 +3,15 @@ import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAx
 import { PageHeader } from '@/components/ui/PageHeader'
 import { useBatchDistribution } from '../analytics.queries'
 
+import { useAuthStore } from '@/features/auth/auth.store'
+
 export function BatchDistributionPage() {
+  const user = useAuthStore((s) => s.user)
   const { data, isLoading, isError } = useBatchDistribution()
-  const items = data?.items ?? []
+  const rawItems = data?.items ?? []
+  const items = user?.role === 'ORGADMIN' && user?.organizationId
+    ? rawItems.filter((it) => it.organizationId === user.organizationId)
+    : rawItems
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>

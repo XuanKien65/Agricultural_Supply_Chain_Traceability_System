@@ -18,9 +18,9 @@ import {
 } from '@mui/material'
 
 import {
+  KeyRounded,
   LogoutRounded,
   MenuRounded,
-  NotificationsNoneRounded,
 } from '@mui/icons-material'
 
 import {
@@ -29,6 +29,8 @@ import {
 } from 'react-router-dom'
 
 import { useAuthStore } from '@/features/auth/auth.store'
+import { ChangePasswordDialog } from '@/features/auth/components/ChangePasswordDialog'
+import { NotificationPopover } from '@/features/notifications/NotificationPopover'
 
 import { AdminSidebar } from './AdminSidebar'
 
@@ -49,6 +51,8 @@ export function AdminLayout() {
     mobileOpen,
     setMobileOpen,
   ] = useState(false)
+
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
 
   const user =
     useAuthStore(
@@ -194,11 +198,7 @@ export function AdminLayout() {
             nguồn gốc nông sản
           </Typography>
 
-          <Tooltip title="Thông báo">
-            <IconButton>
-              <NotificationsNoneRounded />
-            </IconButton>
-          </Tooltip>
+          <NotificationPopover />
 
           <Box
             sx={{
@@ -261,6 +261,12 @@ export function AdminLayout() {
               </Typography>
             </Box>
 
+            <Tooltip title="Đổi mật khẩu">
+              <IconButton onClick={() => setChangePasswordOpen(true)}>
+                <KeyRounded />
+              </IconButton>
+            </Tooltip>
+
             <Tooltip title="Đăng xuất">
               <IconButton
                 onClick={() => {
@@ -277,6 +283,11 @@ export function AdminLayout() {
           </Box>
         </Toolbar>
       </AppBar>
+
+      <ChangePasswordDialog
+        open={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+      />
 
       <Box
         component="main"

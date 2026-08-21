@@ -34,6 +34,11 @@ const items = [
     icon: <DashboardRounded />,
   },
   {
+    label: 'Tổ chức của tôi',
+    path: '/admin/organization',
+    icon: <ApartmentRounded />,
+  },
+  {
     label: 'Vai trò',
     path: '/admin/roles',
     icon: <BadgeRounded />,
@@ -78,7 +83,24 @@ const items = [
     path: '/admin/recalls',
     icon: <WarningAmberRounded />,
   },
+  {
+    label: 'Cảnh báo thu hồi',
+    path: '/admin/recall-notifications',
+    icon: <WarningAmberRounded />,
+  },
+  {
+    label: 'Phân bổ lô hàng',
+    path: '/admin/analytics/batch-distribution',
+    icon: <TimelineRounded />,
+  },
+  {
+    label: 'Thời gian xử lý',
+    path: '/admin/analytics/processing-time',
+    icon: <DashboardRounded />,
+  },
 ]
+
+import { useAuthStore } from '@/features/auth/auth.store'
 
 interface Props {
   onNavigate?: () => void
@@ -89,6 +111,17 @@ export function AdminSidebar({
 }: Props) {
   const navigate = useNavigate()
   const location = useLocation()
+  const user = useAuthStore(state => state.user)
+
+  const visibleItems = items.filter(item => {
+    if (user?.role === 'ORGADMIN') {
+      return !['/admin/roles', '/admin/units'].includes(item.path)
+    }
+    if (user?.role === 'ADMIN') {
+      return item.path !== '/admin/organization'
+    }
+    return true
+  })
 
   function isActive(
     path: string,
@@ -116,6 +149,7 @@ export function AdminSidebar({
       }}
     >
       <Box
+        onClick={() => navigate('/')}
         sx={{
           px: 2.5,
           py: 2.3,
@@ -124,6 +158,10 @@ export function AdminSidebar({
           alignItems: 'center',
 
           gap: 1.2,
+          cursor: 'pointer',
+          '&:hover': {
+            opacity: 0.9,
+          },
         }}
       >
         <Box
@@ -179,7 +217,7 @@ export function AdminSidebar({
           py: 1.6,
         }}
       >
-        {items.map((item) => {
+        {visibleItems.map((item) => {
           const active =
             isActive(item.path)
 

@@ -1,3 +1,5 @@
+import { useAuthStore } from '@/features/auth/auth.store'
+
 import {
   useMemo,
   useState,
@@ -85,8 +87,16 @@ export function AdminProductsPage() {
     setActionError,
   ] = useState('')
 
-  const products =
-    productsQuery.data ?? []
+  const currentUser = useAuthStore(state => state.user)
+  const isOrgAdmin = currentUser?.role === 'ORGADMIN'
+
+  const products = useMemo(() => {
+    let list = productsQuery.data ?? []
+    if (isOrgAdmin && currentUser?.organizationId) {
+      list = list.filter(p => p.organizationId === currentUser.organizationId)
+    }
+    return list
+  }, [productsQuery.data, isOrgAdmin, currentUser?.organizationId])
 
   const organizations =
     organizationsQuery.data ?? []
@@ -211,23 +221,28 @@ export function AdminProductsPage() {
         )
 
       if (!name) {
-        setActionError(
-          'Tên sản phẩm không được để trống.',
-        )
-
+        setActionError('Tên sản phẩm không được để trống.')
         return
       }
 
       if (
-        !Number.isInteger(
-          organizationId,
-        ) ||
+        !Number.isInteger(organizationId) ||
         organizationId <= 0
       ) {
-        setActionError(
-          'Bạn phải chọn một tổ chức sở hữu sản phẩm.',
-        )
+        setActionError('Bạn phải chọn một tổ chức sở hữu sản phẩm.')
+        return
+      }
 
+      // Kiểm tra trùng tên sản phẩm trong cùng 1 tổ chức
+      const isDuplicate = products.some(
+        p =>
+          (!editing || p.id !== editing.id) &&
+          p.organizationId === organizationId &&
+          (p.name ?? '').trim().toLowerCase() === name.toLowerCase(),
+      )
+
+      if (isDuplicate) {
+        setActionError(`Sản phẩm "${name}" đã tồn tại trong tổ chức này. Vui lòng nhập tên khác.`)
         return
       }
 
@@ -409,7 +424,6 @@ export function AdminProductsPage() {
     <>
       <PageHeader
         title="Quản lý sản phẩm"
-        description="Thêm, sửa, xóa sản phẩm trong bảng Products."
         search={search}
         onSearchChange={
           setSearch
@@ -482,69 +496,52 @@ export function AdminProductsPage() {
               }
             : {
                 name: '',
-
                 category: '',
-
                 unit: '',
-
-                // Khi thêm mới tự chọn Organization đầu tiên.
-                organizationId:
-                  organizations[0]
-                    ?.id ?? '',
+                organizationId: isOrgAdmin && currentUser?.organizationId ? currentUser.organizationId : '',
               }
         }
+        error={actionError}
         fields={[
           {
             name: 'name',
-            label:
-              'Tên sản phẩm',
+            label: 'Tên sản phẩm',
             required: true,
           },
-
           {
             name: 'category',
             label: 'Danh mục',
+            required: true,
           },
-
           {
             name: 'unit',
-            label:
-              'Đơn vị tính',
-          },
-
-          {
-            name:
-              'organizationId',
-
-            label:
-              'Tổ chức',
-
-            type: 'select',
-
+            label: 'Đơn vị tính',
             required: true,
-
-            options:
-              organizations.map(
-                organization => ({
-                  value:
-                    organization.id,
-
-                  label:
-                    `${organization.name} (${organization.type})`,
-                }),
-              ),
+          },
+          {
+            name: 'organizationId',
+            label: 'Tổ chức',
+            type: 'select',
+            required: true,
+            disabled: isOrgAdmin,
+            options: (isOrgAdmin && currentUser?.organizationId
+              ? organizations.filter((o) => o.id === currentUser.organizationId)
+              : organizations
+            ).map((organization) => ({
+              value: organization.id,
+              label: `${organization.name} (${organization.type})`,
+            })),
           },
         ]}
         onClose={() => {
           if (
-            crud.create
-              .isPending ||
-            crud.update
-              .isPending
+            crud.create.isPending ||
+            crud.update.isPending
           ) {
             return
           }
 
+          setActionError('')
           setOpen(false)
           setEditing(null)
         }}

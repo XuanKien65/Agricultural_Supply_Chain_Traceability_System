@@ -63,6 +63,13 @@ const AdminRolesPage = lazyPage(() => import('@/features/admin/pages/AdminRolesP
 const AdminUnitsPage = lazyPage(() => import('@/features/admin/pages/AdminUnitsPage'), 'AdminUnitsPage')
 const AdminUsersPage = lazyPage(() => import('@/features/admin/pages/AdminUsersPage'), 'AdminUsersPage')
 const AdminProductsPage = lazyPage(() => import('@/features/admin/pages/AdminProductsPage'), 'AdminProductsPage')
+const AdminBatchesPage = lazyPage(() => import('@/features/admin/pages/AdminBatchesPage'), 'AdminBatchesPage')
+const AdminEventsPage = lazyPage(() => import('@/features/admin/pages/AdminEventsPage'), 'AdminEventsPage')
+const AdminInspectionsPage = lazyPage(() => import('@/features/admin/pages/AdminInspectionsPage'), 'AdminInspectionsPage')
+const AdminCertificatesPage = lazyPage(() => import('@/features/admin/pages/AdminCertificatesPage'), 'AdminCertificatesPage')
+const AdminRecallsPage = lazyPage(() => import('@/features/admin/pages/AdminRecallsPage'), 'AdminRecallsPage')
+const AdminOrganizationDetailPage = lazyPage(() => import('@/features/admin/pages/AdminOrganizationDetailPage'), 'AdminOrganizationDetailPage')
+const RecallNotificationsPage = lazyPage(() => import('@/features/recalls/pages/RecallNotificationsPage'), 'RecallNotificationsPage')
 
 // --- ROUTER CONFIGURATION ---
 export const router = createBrowserRouter([
@@ -78,20 +85,29 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [
       // ---------------------------------------------------------
-      // NHÁNH A: QUẢN TRỊ VIÊN (Admin)
+      // NHÁNH A: QUẢN TRỊ VIÊN (Admin & OrgAdmin)
       // ---------------------------------------------------------
       {
-        element: <RoleRoute roles={['ADMIN']} />,
+        element: <RoleRoute roles={['ADMIN', 'ORGADMIN']} />,
         children: [
           {
             path: 'admin',
             element: <AdminLayout />,
             children: [
               { index: true, element: <AdminDashboardPage /> },
+              { path: 'organization', element: <AdminOrganizationDetailPage /> },
               { path: 'roles', element: <AdminRolesPage /> },
               { path: 'units', element: <AdminUnitsPage /> },
               { path: 'users', element: <AdminUsersPage /> },
               { path: 'products', element: <AdminProductsPage /> },
+              { path: 'batches', element: <AdminBatchesPage /> },
+              { path: 'events', element: <AdminEventsPage /> },
+              { path: 'inspections', element: <AdminInspectionsPage /> },
+              { path: 'certificates', element: <AdminCertificatesPage /> },
+              { path: 'recalls', element: <AdminRecallsPage /> },
+              { path: 'recall-notifications', element: <RecallNotificationsPage /> },
+              { path: 'analytics/batch-distribution', element: <BatchDistributionPage /> },
+              { path: 'analytics/processing-time', element: <ProcessingTimePage /> },
             ],
           },
         ],
@@ -105,7 +121,7 @@ export const router = createBrowserRouter([
         children: [
           // Dashboard chung
           {
-            element: <RoleRoute roles={['FARMER', 'OPERATOR', 'INSPECTOR', 'ADMIN']} />,
+            element: <RoleRoute roles={['FARMER', 'OPERATOR', 'INSPECTOR', 'ADMIN', 'ORGADMIN']} />,
             children: [
               { path: 'dashboard', element: <ActorDashboardPage /> },
               { path: 'farmer', element: <FarmerDashboardPage /> },
@@ -127,7 +143,7 @@ export const router = createBrowserRouter([
 
           // Quyền Ghi nhận sự kiện chuỗi
           {
-            element: <RoleRoute roles={['FARMER', 'OPERATOR']} />,
+            element: <RoleRoute roles={['FARMER', 'OPERATOR', 'INSPECTOR', 'ADMIN', 'ORGADMIN']} />,
             children: [
               { path: 'record-event', element: <RecordEventPage /> },
               { path: 'record-event/:batchId', element: <RecordEventPage /> },
@@ -136,29 +152,44 @@ export const router = createBrowserRouter([
 
           // Quyền Tách lô / Gộp lô
           {
-            element: <RoleRoute roles={['OPERATOR', 'ADMIN']} />,
+            element: <RoleRoute roles={['OPERATOR', 'ADMIN', 'INSPECTOR', 'ORGADMIN', 'FARMER']} />,
             children: [
               { path: 'batches/:batchId/split', element: <SplitBatchPage /> },
               { path: 'batches/merge', element: <MergeBatchPage /> },
             ],
           },
 
-          // Quyền Kiểm định & Thu hồi
+          // Quyền xem Kiểm định & Thu hồi (cho tất cả các vai trò trong chuỗi)
           {
-            element: <RoleRoute roles={['INSPECTOR', 'ADMIN']} />,
+            element: <RoleRoute roles={['FARMER', 'OPERATOR', 'INSPECTOR', 'ADMIN', 'ORGADMIN']} />,
             children: [
               { path: 'quality', element: <QualityInspectionsPage /> },
-              { path: 'quality/new', element: <CreateInspectionPage /> },
               { path: 'quality/:inspectionId', element: <InspectionDetailPage /> },
               { path: 'recalls', element: <RecallsPage /> },
-              { path: 'recalls/new', element: <CreateRecallPage /> },
               { path: 'recalls/:recallId', element: <RecallDetailPage /> },
+              { path: 'recall-notifications', element: <RecallNotificationsPage /> },
+            ],
+          },
+
+          // Quyền Tạo Kiểm định mới
+          {
+            element: <RoleRoute roles={['FARMER', 'OPERATOR', 'INSPECTOR', 'ADMIN', 'ORGADMIN']} />,
+            children: [
+              { path: 'quality/new', element: <CreateInspectionPage /> },
+            ],
+          },
+
+          // Quyền Tạo Thu hồi mới
+          {
+            element: <RoleRoute roles={['FARMER', 'OPERATOR', 'INSPECTOR', 'ADMIN', 'ORGADMIN']} />,
+            children: [
+              { path: 'recalls/new', element: <CreateRecallPage /> },
             ],
           },
 
           // Báo cáo & Phân tích (Analytics)
           {
-            element: <RoleRoute roles={['ADMIN']} />,
+            element: <RoleRoute roles={['ADMIN', 'ORGADMIN', 'INSPECTOR']} />,
             children: [{ path: 'analytics/overview', element: <AnalyticsOverviewPage /> }],
           },
           {
@@ -169,7 +200,7 @@ export const router = createBrowserRouter([
             ],
           },
           {
-            element: <RoleRoute roles={['ADMIN', 'INSPECTOR']} />,
+            element: <RoleRoute roles={['ADMIN', 'ORGADMIN', 'INSPECTOR', 'OPERATOR', 'FARMER']} />,
             children: [
               { path: 'analytics/traceback', element: <TracebackPage /> },
               { path: 'analytics/traceback/:batchId', element: <TracebackPage /> },

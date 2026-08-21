@@ -34,7 +34,7 @@ export function QrScannerDialog({ open, onClose, onScanned }: Props) {
       .start(
         { facingMode: 'environment' },
         { fps: 10, qrbox: 250 },
-        (decodedText) => {
+        (decodedText: string) => {
           const batchId = parseBatchIdFromScan(decodedText)
           if (batchId) {
             onScanned(batchId)

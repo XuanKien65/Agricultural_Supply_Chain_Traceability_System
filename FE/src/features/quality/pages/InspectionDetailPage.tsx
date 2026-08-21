@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, CheckCircle2, XCircle, ClipboardCheck, Calendar, User, FileText, ArrowRight } from 'lucide-react'
 
+import { getStoredInspections } from '../inspectionsStorage'
+
 /**
  * InspectionDetailPage - Chi tiết kiểm định chất lượng
  * Hiển thị chi tiết kết quả kiểm định, các tiêu chí đạt/không đạt
@@ -12,14 +14,72 @@ export function InspectionDetailPage() {
   const { inspectionId } = useParams()
   const navigate = useNavigate()
 
-  // ==========================================
-  // CODE GỐC: Fetch chi tiết kiểm định
-  // ==========================================
   const { data: inspection, isLoading } = useQuery({
     queryKey: ['inspection', inspectionId],
     queryFn: async () => {
+      const idStr = String(inspectionId || 'I001')
+      const stored = getStoredInspections().find((x) => x.id === idStr)
+      if (stored) {
+        return {
+          id: stored.id,
+          batchId: stored.batchId,
+          inspectionDate: stored.inspectionDate,
+          inspector: stored.inspector,
+          result: stored.result,
+          criteria: [
+            { name: 'Độ tươi & hình thái cảm quan', passed: true, note: 'Tươi mới, đạt yêu cầu cảm quan' },
+            { name: 'Màu sắc & độ đồng đều quy cách size', passed: true, note: 'Đồng đều > 90%' },
+            { name: 'Tỷ lệ dập nát / tổn thương cơ học (< 3%)', passed: true, note: 'Tỷ lệ dập nát 0.8%' },
+            { name: 'Dư lượng thuốc bảo vệ thực vật (MRL)', passed: stored.result !== 'Fail', note: stored.result === 'Fail' ? 'Phát hiện chỉ tiêu vượt ngưỡng MRL' : 'Âm tính toàn bộ chỉ tiêu' },
+            { name: 'Chỉ tiêu vi sinh vật (Salmonella, E.Coli)', passed: true, note: 'Âm tính toàn phần' },
+          ],
+          notes: stored.notes,
+          certificateUrl: null,
+          createdAt: stored.inspectionDate,
+        }
+      }
+
+      if (idStr === 'I002') {
+        return {
+          id: 'I002',
+          batchId: 'B002',
+          inspectionDate: '2026-01-18 09:30:00',
+          inspector: 'Phòng Lab Nông nghiệp Xanh',
+          result: 'Pass',
+          criteria: [
+            { name: 'Độ tươi & hình thái cảm quan', passed: true, note: 'Cà chua bi căng mọng, cuống tươi' },
+            { name: 'Độ ngọt Brix & hương vị', passed: true, note: 'Đạt 8.5 Brix' },
+            { name: 'Dư lượng thuốc BVTV (MRL)', passed: true, note: 'Âm tính toàn bộ 250 chỉ tiêu' },
+            { name: 'Chỉ tiêu vi sinh vật (Salmonella)', passed: true, note: 'Âm tính' },
+            { name: 'Hàm lượng Nitrat', passed: true, note: 'Đạt chuẩn Organic EU' },
+          ],
+          notes: 'Hàm lượng nitrat và vi sinh đạt chuẩn Organic quốc tế. Đủ điều kiện đóng gói xuất khẩu.',
+          certificateUrl: null,
+          createdAt: '2026-01-18 09:30:00',
+        }
+      }
+
+      if (idStr === 'I003') {
+        return {
+          id: 'I003',
+          batchId: 'B003',
+          inspectionDate: '2026-01-19 14:00:00',
+          inspector: 'Trung tâm Giám định Chất lượng Quốc gia',
+          result: 'Fail',
+          criteria: [
+            { name: 'Độ tươi & hình thái cảm quan', passed: true, note: 'Bình thường' },
+            { name: 'Độ ngọt Brix', passed: true, note: 'Đạt 14 Brix' },
+            { name: 'Dư lượng thuốc BVTV (MRL)', passed: false, note: 'Phát hiện dư lượng Chlorpyrifos 0.08mg/kg (Ngưỡng <0.01)' },
+            { name: 'Chỉ tiêu vi sinh vật', passed: true, note: 'Âm tính' },
+          ],
+          notes: 'Phát hiện dư lượng thuốc BVTV vượt ngưỡng quy định 0.05mg/kg. Đề xuất cảnh báo thu hồi lô hàng.',
+          certificateUrl: null,
+          createdAt: '2026-01-19 14:00:00',
+        }
+      }
+
       return {
-        id: inspectionId || 'I001',
+        id: idStr,
         batchId: 'B001',
         inspectionDate: '2026-01-15 10:30:00',
         inspector: 'Đội KCS Nông trại Đà Lạt & Phòng Lab Trung tâm',

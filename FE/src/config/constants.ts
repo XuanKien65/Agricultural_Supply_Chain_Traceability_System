@@ -30,10 +30,28 @@ export const STATUS_STYLES: Record<
     color: '#1B5E20',
   },
 
+  PASS: {
+    label: 'PASS ',
+    bg: '#E8F5E9',
+    color: '#1B5E20',
+  },
+
   FAILED: {
     label: 'Không đạt',
     bg: '#FFEBEE',
     color: '#C62828',
+  },
+
+  FAIL: {
+    label: 'FAIL ',
+    bg: '#FFEBEE',
+    color: '#C62828',
+  },
+
+  PENDING: {
+    label: 'PENDING ',
+    bg: '#FFF8E1',
+    color: '#F57F17',
   },
 
   CRITICAL: {

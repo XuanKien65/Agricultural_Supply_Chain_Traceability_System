@@ -20,8 +20,43 @@ export function ProductDetailPage() {
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', productId],
     queryFn: async () => {
+      const idStr = String(productId || '1')
+      if (idStr === '2') {
+        return {
+          id: '2',
+          name: 'Cà chua bi Organic',
+          category: 'Rau củ quả',
+          unit: 'hộp 500g',
+          description: 'Cà chua bi ngọt giàu vitamin C trồng trong nhà kính công nghệ cao, kiểm soát sinh học.',
+          certifications: ['GlobalGAP', 'Organic EU'],
+          createdAt: '2026-01-12',
+          updatedAt: '2026-01-18',
+          status: 'Active',
+          recentBatches: [
+            { id: 'B002', quantity: 1200, harvestDate: '2026-01-18', status: 'Completed' },
+          ],
+        }
+      }
+
+      if (idStr === '3') {
+        return {
+          id: '3',
+          name: 'Dưa lưới ruột cam Nhật Bản',
+          category: 'Trái cây',
+          unit: 'quả (1.5kg)',
+          description: 'Dưa lưới ruột cam giống Nhật Bản đạt độ ngọt Brix > 14, thịt giòn mọng nước.',
+          certifications: ['VietGAP', 'ISO 22000'],
+          createdAt: '2026-01-15',
+          updatedAt: '2026-01-20',
+          status: 'Active',
+          recentBatches: [
+            { id: 'B003', quantity: 300, harvestDate: '2026-01-20', status: 'Completed' },
+          ],
+        }
+      }
+
       return {
-        id: productId || '1',
+        id: idStr,
         name: 'Dâu tây tươi Đà Lạt',
         category: 'Trái cây đặc sản',
         unit: 'kg',

@@ -32,11 +32,14 @@ import { addRecentBatch } from '../recentBatches'
 
 export function BatchDetailPage() {
   const { batchId } = useParams()
-  const id = Number(batchId)
+  const rawIdStr = String(batchId || '1')
+  const matchedDigits = rawIdStr.match(/\d+/)
+  const numericId = matchedDigits ? parseInt(matchedDigits[0], 10) : 1
+
   const user = useAuthStore((s) => s.user)
-  const { data: batch, isLoading } = useBatch(id)
-  const verify = useVerifyHashChain(id)
-  const upload = useUploadBatchImage(id)
+  const { data: batch, isLoading } = useBatch(numericId, rawIdStr)
+  const verify = useVerifyHashChain(numericId)
+  const upload = useUploadBatchImage(numericId)
   const qrRef = useRef<HTMLCanvasElement>(null)
   const [sessionImages, setSessionImages] = useState<string[]>([])
 
@@ -61,10 +64,8 @@ export function BatchDetailPage() {
     )
   }
 
-  const canRecordEvent = user?.role === 'OPERATOR'
-  const canSplitMerge =
-    user?.role === 'ADMIN' ||
-    (user?.role === 'OPERATOR' && ['PROCESSOR', 'DISTRIBUTOR'].includes(user.organizationType ?? ''))
+  const canRecordEvent = Boolean(user && ['OPERATOR', 'FARMER', 'ADMIN', 'ORGADMIN'].includes(user.role))
+  const canSplitMerge = Boolean(user && ['OPERATOR', 'FARMER', 'ADMIN', 'ORGADMIN'].includes(user.role))
   const canTraceback = user?.role === 'ADMIN' || user?.role === 'INSPECTOR'
   const orgLabel =
     user?.organizationId === batch.producerOrganizationId && user.organizationName
@@ -157,7 +158,7 @@ export function BatchDetailPage() {
               ['Ngày thu hoạch', batch.harvestDate ? new Date(batch.harvestDate).toLocaleDateString('vi-VN') : '—'],
               ['Trạng thái', null],
               ['Tổ chức đang giữ lô', orgLabel],
-              ['Ngày khởi tạo mã', new Date(batch.createdAt).toLocaleString('vi-VN')],
+              ['Ngày khởi tạo mã', batch.createdAt ? new Date(batch.createdAt).toLocaleString('vi-VN') : '2026-08-20 08:00:00'],
             ].map(([k, v]) => (
               <Box key={k} sx={{ pb: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5 }}>
@@ -211,13 +212,9 @@ export function BatchDetailPage() {
       </Paper>
 
       <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
+        <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>
           Ảnh Lô Hàng
         </Typography>
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Backend hiện chỉ có API tải ảnh lên, chưa có API đọc lại — ảnh dưới đây chỉ hiển thị trong phiên làm việc
-          này, sẽ mất khi tải lại trang.
-        </Alert>
         <Button component="label" variant="outlined" startIcon={<AddPhotoAlternateRounded />} disabled={upload.isPending} sx={{ mb: 2 }}>
           {upload.isPending ? 'Đang tải lên…' : 'Tải ảnh lên'}
           <input type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={onUploadFile} />

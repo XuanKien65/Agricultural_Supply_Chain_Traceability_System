@@ -41,70 +41,66 @@ import {
   type FormValues,
 } from '../components/AdminFormDialog'
 
+import { useAuthStore } from '@/features/auth/auth.store'
+
 export function AdminEventsPage() {
-  const events =
-    useAdminEvents()
+  const currentUser = useAuthStore((s) => s.user)
+  const isOrgAdmin = currentUser?.role === 'ORGADMIN'
+  const orgId = currentUser?.organizationId
 
-  const batches =
-    useAdminBatches()
+  const events = useAdminEvents()
+  const batches = useAdminBatches()
+  const organizations = useAdminOrganizations()
+  const users = useAdminUsers()
+  const create = useCreateAdminEvent()
 
-  const organizations =
-    useAdminOrganizations()
+  const [search, setSearch] = useState('')
+  const [open, setOpen] = useState(false)
+  const [message, setMessage] = useState('')
+  const [actionError, setActionError] = useState('')
 
-  const users =
-    useAdminUsers()
+  const rows = useMemo(() => {
+    let list = events.data ?? []
+    if (isOrgAdmin && orgId) {
+      list = list.filter((item) => item.organizationId === orgId)
+    }
+    const q = search.trim().toLowerCase()
+    if (!q) return list
 
-  const create =
-    useCreateAdminEvent()
-
-  const [
-    search,
-    setSearch,
-  ] = useState('')
-
-  const [
-    open,
-    setOpen,
-  ] = useState(false)
-
-  const [
-    message,
-    setMessage,
-  ] = useState('')
-
-  const data =
-    events.data ?? []
-
-  const rows =
-    useMemo(() => {
-      const q =
-        search
-          .trim()
+    return list.filter(
+      (item) =>
+        `${item.eventType ?? ''} ${item.batchCode ?? ''} ${item.organizationName ?? ''} ${item.userName ?? ''} ${item.location ?? ''}`
           .toLowerCase()
+          .includes(q),
+    )
+  }, [events.data, isOrgAdmin, orgId, search])
 
-      if (!q)
-        return data
+  const organizationOptions = useMemo(() => {
+    let list = organizations.data ?? []
+    if (isOrgAdmin && orgId) {
+      list = list.filter((o) => o.id === orgId)
+    }
+    return list.map((item) => ({ value: item.id, label: item.name }))
+  }, [organizations.data, isOrgAdmin, orgId])
 
-      return data.filter(
-        item =>
-          `${item.eventType} ${
-            item.batchCode ?? ''
-          } ${
-            item.organizationName ??
-            ''
-          } ${
-            item.userName ?? ''
-          } ${
-            item.location ??
-            ''
-          }`
-            .toLowerCase()
-            .includes(q),
-      )
-    }, [
-      data,
-      search,
-    ])
+  const userOptions = useMemo(() => {
+    let list = users.data ?? []
+    if (isOrgAdmin && orgId) {
+      list = list.filter((u) => u.organizationId === orgId)
+    }
+    return list.map((item) => ({
+      value: item.id,
+      label: item.fullName ? `${item.fullName} (${item.email})` : item.email,
+    }))
+  }, [users.data, isOrgAdmin, orgId])
+
+  const batchOptions = useMemo(() => {
+    let list = batches.data ?? []
+    if (isOrgAdmin && orgId) {
+      list = list.filter((b) => b.currentOrganizationId === orgId)
+    }
+    return list.map((item) => ({ value: item.id, label: item.batchCode }))
+  }, [batches.data, isOrgAdmin, orgId])
 
   if (
     events.isLoading ||
@@ -112,9 +108,7 @@ export function AdminEventsPage() {
     organizations.isLoading ||
     users.isLoading
   ) {
-    return (
-      <PageLoader label="Đang tải sự kiện..." />
-    )
+    return <PageLoader label="Đang tải sự kiện chuỗi cung ứng..." />
   }
 
   const error =
@@ -136,63 +130,52 @@ export function AdminEventsPage() {
   async function save(
     values: FormValues,
   ) {
-    const payload:
-      AdminEventPayload =
-      {
-        batchId:
-          Number(
-            values.batchId,
-          ),
+    try {
+      setActionError('')
 
-        eventType:
-          String(
-            values.eventType,
-          ),
+      const batchId = Number(values.batchId)
+      const eventType = String(values.eventType || '').trim()
+      const organizationId = Number(values.organizationId)
+      const userId = Number(values.userId)
 
-        organizationId:
-          Number(
-            values.organizationId,
-          ),
-
-        userId:
-          Number(
-            values.userId,
-          ),
-
-        eventData:
-          String(
-            values.eventData ||
-              '',
-          ) || null,
-
-        location:
-          String(
-            values.location ||
-              '',
-          ) || null,
-
-        previousHash:
-          String(
-            values.previousHash ||
-              '',
-          ) || null,
-
-        currentHash:
-          String(
-            values.currentHash ||
-              '',
-          ) || null,
+      if (!values.batchId || Number.isNaN(batchId) || batchId <= 0) {
+        setActionError('Vui lòng chọn Lô hàng.')
+        return
       }
 
-    await create.mutateAsync(
-      payload,
-    )
+      if (!eventType) {
+        setActionError('Vui lòng chọn Loại sự kiện.')
+        return
+      }
 
-    setMessage(
-      'Đã ghi sự kiện mới.',
-    )
+      if (!values.organizationId || Number.isNaN(organizationId) || organizationId <= 0) {
+        setActionError('Vui lòng chọn Tổ chức.')
+        return
+      }
 
-    setOpen(false)
+      if (!values.userId || Number.isNaN(userId) || userId <= 0) {
+        setActionError('Vui lòng chọn Người thực hiện.')
+        return
+      }
+
+      const payload: AdminEventPayload = {
+        batchId,
+        eventType,
+        organizationId,
+        userId,
+        eventData: String(values.eventData || '').trim() || null,
+        location: String(values.location || '').trim() || null,
+        previousHash: String(values.previousHash || '').trim() || null,
+        currentHash: String(values.currentHash || '').trim() || null,
+      }
+
+      await create.mutateAsync(payload)
+      setMessage('Đã ghi sự kiện mới.')
+      setOpen(false)
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Không thể ghi sự kiện.'
+      setActionError(errMsg)
+    }
   }
 
   const columns:
@@ -265,21 +248,14 @@ export function AdminEventsPage() {
   return (
     <>
       <PageHeader
-        title="Chuỗi sự kiện"
-        description="SupplyChainEvents chỉ thêm mới và xem lịch sử."
+        title="Chuỗi sự kiện chuỗi cung ứng"
         search={search}
-        onSearchChange={
-          setSearch
-        }
+        onSearchChange={setSearch}
         action={
           <Button
             variant="contained"
-            startIcon={
-              <AddRounded />
-            }
-            onClick={() =>
-              setOpen(true)
-            }
+            startIcon={<AddRounded />}
+            onClick={() => setOpen(true)}
           >
             Thêm sự kiện
           </Button>
@@ -301,53 +277,29 @@ export function AdminEventsPage() {
           create.isPending
         }
         initial={{
-          batchId:
-            batches
-              .data?.[0]
-              ?.id ?? '',
-
-          eventType:
-            'HARVEST',
-
-          organizationId:
-            organizations
-              .data?.[0]
-              ?.id ?? '',
-
-          userId:
-            users
-              .data?.[0]
-              ?.id ?? '',
-
+          batchId: '',
+          eventType: '',
+          organizationId: isOrgAdmin && orgId ? orgId : '',
+          userId: '',
           eventData: '',
           location: '',
           previousHash: '',
           currentHash: '',
         }}
+        error={actionError}
         fields={[
           {
             name: 'batchId',
             label: 'Lô hàng',
             type: 'select',
             required: true,
-
-            options: (
-              batches.data ??
-              []
-            ).map(item => ({
-              value: item.id,
-              label:
-                item.batchCode,
-            })),
+            options: batchOptions,
           },
-
           {
             name: 'eventType',
-            label:
-              'Loại sự kiện',
+            label: 'Loại sự kiện',
             type: 'select',
             required: true,
-
             options: [
               'HARVEST',
               'PROCESS',
@@ -357,44 +309,25 @@ export function AdminEventsPage() {
               'RECEIVE',
               'SPLIT',
               'MERGE',
-            ].map(value => ({
+            ].map((value) => ({
               value,
               label: value,
             })),
           },
-
           {
-            name:
-              'organizationId',
+            name: 'organizationId',
             label: 'Tổ chức',
             type: 'select',
             required: true,
-
-            options: (
-              organizations.data ??
-              []
-            ).map(item => ({
-              value: item.id,
-              label: item.name,
-            })),
+            disabled: isOrgAdmin,
+            options: organizationOptions,
           },
-
           {
             name: 'userId',
-            label:
-              'Người thực hiện',
+            label: 'Người thực hiện',
             type: 'select',
             required: true,
-
-            options: (
-              users.data ?? []
-            ).map(item => ({
-              value: item.id,
-
-              label:
-                item.fullName ??
-                item.email,
-            })),
+            options: userOptions,
           },
 
           {

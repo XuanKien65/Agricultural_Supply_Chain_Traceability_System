@@ -2,6 +2,7 @@ export interface ApiEnvelope<T> {
   statusCode: number
   isSuccess: boolean
   errorMessages: string[]
+  data?: T
   result: T
 }
 
@@ -16,6 +17,11 @@ export interface AdminOrganization {
   name: string
   type: string
   status: string
+  address?: string | null
+  phone?: string | null
+  email?: string | null
+  contactPerson?: string | null
+  isActive?: boolean
   createdAt: string | null
 }
 
@@ -98,6 +104,8 @@ export interface AdminRecall {
   severity: string | null
   createdBy: number
   createdByName: string | null
+  isResolved?: boolean
+  resolvedAt?: string | null
   createdAt: string | null
 }
 
