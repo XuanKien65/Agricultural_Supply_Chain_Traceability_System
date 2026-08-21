@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft, Save, PlusCircle, ShieldCheck } from 'lucide-react'
@@ -13,23 +12,30 @@ import { ArrowLeft, Save, PlusCircle, ShieldCheck } from 'lucide-react'
  * CreateProductPage - Tạo loại sản phẩm mới
  * Cho phép thêm các loại sản phẩm nông sản và chứng nhận của nó
  */
+import { useAuthStore } from '@/features/auth/auth.store'
+import { adminApi } from '@/features/admin/admin.api'
+
 export function CreateProductPage() {
   const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
 
-  // ==========================================
-  // CODE GỐC: State và Mutation tạo sản phẩm
-  // ==========================================
   const [formData, setFormData] = useState({
     name: '',
     category: '',
     description: '',
-    unit: 'kg',
+    unit: '',
     certifications: [] as string[],
   })
 
   const createProductMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return { id: '1', ...data }
+      const orgId = user?.organizationId || 1
+      return await adminApi.createProduct({
+        name: data.name,
+        category: data.category,
+        unit: data.unit,
+        organizationId: orgId,
+      })
     },
     onSuccess: () => {
       navigate('/products')
@@ -111,49 +117,67 @@ export function CreateProductPage() {
             </div>
 
             {/* Phân loại & Đơn vị */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
                 <Label htmlFor="category" className="text-xs font-bold text-slate-700">
                   Phân Loại Sản Phẩm *
                 </Label>
-                <Select
+                <Input
+                  id="category"
+                  name="category"
                   value={formData.category}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
-                >
-                  <SelectTrigger className="bg-slate-50 focus:bg-white">
-                    <SelectValue placeholder="Chọn phân loại" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Fruit">🍎 Trái cây cao cấp</SelectItem>
-                    <SelectItem value="Vegetable">🥬 Rau xanh & Củ quả</SelectItem>
-                    <SelectItem value="Grain">🌾 Lúa gạo & Ngũ cốc</SelectItem>
-                    <SelectItem value="Dairy">🥛 Sản phẩm từ sữa</SelectItem>
-                    <SelectItem value="Meat">🍗 Thịt gia súc gia cầm</SelectItem>
-                    <SelectItem value="Other">📦 Khác</SelectItem>
-                  </SelectContent>
-                </Select>
+                  onChange={handleChange}
+                  required
+                  placeholder="Nhập loại sản phẩm (Ví dụ: Trái cây, Rau củ, Ngũ cốc)..."
+                  className="bg-white focus:bg-white text-sm border-slate-300"
+                />
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {['Trái cây cao cấp', 'Rau xanh & Củ quả', 'Lúa gạo & Ngũ cốc', 'Thịt & Thủy hải sản', 'Sản phẩm chế biến'].map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, category: cat }))}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition ${
+                        formData.category === cat
+                          ? 'bg-emerald-700 text-white border-emerald-700 font-bold shadow-sm'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      + {cat}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="unit" className="text-xs font-bold text-slate-700">
                   Quy Cách Đóng Gói / Đơn Vị *
                 </Label>
-                <Select
+                <Input
+                  id="unit"
+                  name="unit"
                   value={formData.unit}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, unit: value }))}
-                >
-                  <SelectTrigger className="bg-slate-50 focus:bg-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="kg">kg (Kilogram)</SelectItem>
-                    <SelectItem value="tấn">tấn (Tấn)</SelectItem>
-                    <SelectItem value="hộp 500g">hộp 500g</SelectItem>
-                    <SelectItem value="thùng (5kg)">thùng (5kg)</SelectItem>
-                    <SelectItem value="quả">quả / trái</SelectItem>
-                    <SelectItem value="lít">lít</SelectItem>
-                  </SelectContent>
-                </Select>
+                  onChange={handleChange}
+                  required
+                  placeholder="Nhập đơn vị (Ví dụ: kg, tấn, hộp 500g, thùng)..."
+                  className="bg-white focus:bg-white text-sm border-slate-300"
+                />
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {['kg', 'tấn', 'hộp 500g', 'thùng (5kg)', 'quả / trái', 'lít'].map((u) => (
+                    <button
+                      key={u}
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, unit: u }))}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition ${
+                        formData.unit === u
+                          ? 'bg-emerald-700 text-white border-emerald-700 font-bold shadow-sm'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      + {u}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 

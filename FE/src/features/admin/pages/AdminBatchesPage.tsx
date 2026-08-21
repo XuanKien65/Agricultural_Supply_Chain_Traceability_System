@@ -48,76 +48,59 @@ import {
 
 import { AdminRowActions } from '../components/AdminRowActions'
 
+import { useAuthStore } from '@/features/auth/auth.store'
+
 export function AdminBatchesPage() {
-  const batches =
-    useAdminBatches()
+  const currentUser = useAuthStore((s) => s.user)
+  const isOrgAdmin = currentUser?.role === 'ORGADMIN'
+  const orgId = currentUser?.organizationId
 
-  const products =
-    useAdminProducts()
+  const batches = useAdminBatches()
+  const products = useAdminProducts()
+  const organizations = useAdminOrganizations()
+  const crud = useBatchCrud()
 
-  const organizations =
-    useAdminOrganizations()
+  const [search, setSearch] = useState('')
+  const [editing, setEditing] = useState<AdminBatch | null>(null)
+  const [open, setOpen] = useState(false)
+  const [message, setMessage] = useState('')
+  const [actionError, setActionError] = useState('')
 
-  const crud =
-    useBatchCrud()
+  const data = useMemo(() => {
+    let list = batches.data ?? []
+    if (isOrgAdmin && orgId) {
+      list = list.filter((b) => b.currentOrganizationId === orgId)
+    }
+    return list
+  }, [batches.data, isOrgAdmin, orgId])
 
-  const [
-    search,
-    setSearch,
-  ] = useState('')
+  const availableProducts = useMemo(() => {
+    let list = products.data ?? []
+    if (isOrgAdmin && orgId) {
+      list = list.filter((p) => p.organizationId === orgId)
+    }
+    return list
+  }, [products.data, isOrgAdmin, orgId])
 
-  const [
-    editing,
-    setEditing,
-  ] =
-    useState<AdminBatch | null>(
-      null,
-    )
+  const organizationOptions = useMemo(() => {
+    let list = organizations.data ?? []
+    if (isOrgAdmin && orgId) {
+      list = list.filter((o) => o.id === orgId)
+    }
+    return list.map((item) => ({ value: item.id, label: item.name }))
+  }, [organizations.data, isOrgAdmin, orgId])
 
-  const [
-    open,
-    setOpen,
-  ] = useState(false)
+  const rows = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return data
 
-  const [
-    message,
-    setMessage,
-  ] = useState('')
-
-  const [
-    actionError,
-    setActionError,
-  ] = useState('')
-
-  const data =
-    batches.data ?? []
-
-  const rows =
-    useMemo(() => {
-      const q =
-        search
-          .trim()
+    return data.filter(
+      (item) =>
+        `${item.batchCode} ${item.productName ?? ''} ${item.currentOrganizationName ?? ''}`
           .toLowerCase()
-
-      if (!q)
-        return data
-
-      return data.filter(
-        item =>
-          `${item.batchCode} ${
-            item.productName ??
-            ''
-          } ${
-            item.currentOrganizationName ??
-            ''
-          }`
-            .toLowerCase()
-            .includes(q),
-      )
-    }, [
-      data,
-      search,
-    ])
+          .includes(q),
+    )
+  }, [data, search])
 
   if (
     batches.isLoading ||
@@ -390,18 +373,13 @@ export function AdminBatchesPage() {
   return (
     <>
       <PageHeader
-        title="Quản lý lô hàng"
-        description="CRUD bảng Batches."
+        title="Quản lý Lô hàng Nông sản"
         search={search}
-        onSearchChange={
-          setSearch
-        }
+        onSearchChange={setSearch}
         action={
           <Button
             variant="contained"
-            startIcon={
-              <AddRounded />
-            }
+            startIcon={<AddRounded />}
             onClick={() => {
               setEditing(null)
               setOpen(true)
@@ -467,108 +445,69 @@ export function AdminBatchesPage() {
                   '',
               }
             : {
-                productId:
-                  products
-                    .data?.[0]
-                    ?.id ?? '',
-
+                productId: '',
                 batchCode: '',
-
-                quantity: 1,
-
-                currentOrganizationId:
-                  organizations
-                    .data?.[0]
-                    ?.id ?? null,
-
-                parentBatchId:
-                  null,
-
-                rootBatchId:
-                  null,
-
+                quantity: '',
+                currentOrganizationId: isOrgAdmin && orgId ? orgId : '',
+                parentBatchId: '',
+                rootBatchId: '',
                 qrCode: '',
               }
         }
+        error={actionError}
         fields={[
           {
             name: 'productId',
             label: 'Sản phẩm',
             type: 'select',
             required: true,
-
-            options: (
-              products.data ??
-              []
-            ).map(item => ({
+            options: availableProducts.map(item => ({
               value: item.id,
-              label:
-                item.name ??
-                `#${item.id}`,
+              label: item.name ?? `#${item.id}`,
             })),
           },
-
           {
             name: 'batchCode',
             label: 'Mã lô',
             required: true,
           },
-
           {
             name: 'quantity',
             label: 'Số lượng',
             type: 'number',
             required: true,
           },
-
           {
-            name:
-              'currentOrganizationId',
-            label:
-              'Đơn vị hiện tại',
+            name: 'currentOrganizationId',
+            label: 'Đơn vị hiện tại',
             type: 'select',
             required: true,
-
-            options: (
-              organizations.data ??
-              []
-            ).map(item => ({
-              value: item.id,
-              label: item.name,
-            })),
+            disabled: isOrgAdmin,
+            options: organizationOptions,
           },
-
           {
-            name:
-              'parentBatchId',
+            name: 'parentBatchId',
             label: 'Lô cha',
             type: 'select',
-            options:
-              batchOptions,
+            options: batchOptions,
           },
-
           {
-            name:
-              'rootBatchId',
+            name: 'rootBatchId',
             label: 'Lô gốc',
             type: 'select',
-            options:
-              batchOptions,
+            options: batchOptions,
           },
-
           {
             name: 'qrCode',
-            label:
-              'QR Code / URL',
+            label: 'QR Code / URL',
           },
         ]}
         onClose={() => {
+          setActionError('')
           setOpen(false)
           setEditing(null)
         }}
-        onSave={values =>
-          void save(values)
-        }
+        onSave={values => void save(values)}
       />
 
       <Snackbar

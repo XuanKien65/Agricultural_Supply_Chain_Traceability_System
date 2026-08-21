@@ -4,15 +4,13 @@ import {
 } from 'react'
 
 import {
+  Alert,
+  Autocomplete,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
   TextField,
 } from '@mui/material'
 
@@ -43,6 +41,7 @@ export interface AdminFormField {
     | 'multiline'
 
   required?: boolean
+  disabled?: boolean
 
   options?:
     AdminFormOption[]
@@ -59,6 +58,7 @@ interface Props {
     FormValues
 
   saving?: boolean
+  error?: string | null
 
   onClose:
     () => void
@@ -76,6 +76,7 @@ export function AdminFormDialog({
   fields,
   initial,
   saving = false,
+  error = null,
   onClose,
   onSave,
 }: Props) {
@@ -149,6 +150,12 @@ export function AdminFormDialog({
           gap: 2,
         }}
       >
+        {error && (
+          <Alert severity="error" sx={{ borderRadius: 2 }}>
+            {error}
+          </Alert>
+        )}
+
         {fields.map(
           field => {
             const value =
@@ -160,72 +167,36 @@ export function AdminFormDialog({
               field.type ===
               'select'
             ) {
+              const selectedOption = (field.options ?? []).find(
+                o => String(o.value) === String(value),
+              ) ?? null
+
               return (
-                <FormControl
-                  key={
-                    field.name
-                  }
+                <Autocomplete
+                  key={field.name}
+                  disabled={field.disabled}
+                  options={field.options ?? []}
+                  getOptionLabel={option => option.label ?? ''}
+                  isOptionEqualToValue={(option, val) => String(option.value) === String(val.value)}
+                  value={selectedOption}
+                  onChange={(_, newValue) => {
+                    setValues(current => ({
+                      ...current,
+                      [field.name]: newValue ? (newValue.value as FormValue) : '',
+                    }))
+                  }}
+                  renderInput={params => (
+                    <TextField
+                      {...params}
+                      label={field.label}
+                      placeholder={`Nhập để tìm/lọc ${field.label.toLowerCase()}...`}
+                      required={field.required}
+                      fullWidth
+                    />
+                  )}
+                  noOptionsText="Không tìm thấy kết quả"
                   fullWidth
-                  required={
-                    field.required
-                  }
-                >
-                  <InputLabel>
-                    {
-                      field.label
-                    }
-                  </InputLabel>
-
-                  <Select
-                    label={
-                      field.label
-                    }
-                    value={
-                      value
-                    }
-                    onChange={
-                      event =>
-                        setValues(
-                          current => ({
-                            ...current,
-
-                            [field.name]:
-                              event
-                                .target
-                                .value as FormValue,
-                          }),
-                        )
-                    }
-                  >
-                    {!field.required && (
-                      <MenuItem
-                        value=""
-                      >
-                        Không chọn
-                      </MenuItem>
-                    )}
-
-                    {(
-                      field.options ??
-                      []
-                    ).map(
-                      option => (
-                        <MenuItem
-                          key={String(
-                            option.value,
-                          )}
-                          value={
-                            option.value
-                          }
-                        >
-                          {
-                            option.label
-                          }
-                        </MenuItem>
-                      ),
-                    )}
-                  </Select>
-                </FormControl>
+                />
               )
             }
 
@@ -234,6 +205,7 @@ export function AdminFormDialog({
                 key={
                   field.name
                 }
+                disabled={field.disabled}
                 label={
                   field.label
                 }

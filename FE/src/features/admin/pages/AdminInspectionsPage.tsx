@@ -56,59 +56,49 @@ import {
   AdminRowActions,
 } from '../components/AdminRowActions'
 
+import { useAuthStore } from '@/features/auth/auth.store'
+
 export function AdminInspectionsPage() {
-  const inspections =
-    useAdminInspections()
+  const currentUser = useAuthStore((s) => s.user)
+  const isOrgAdmin = currentUser?.role === 'ORGADMIN'
+  const orgId = currentUser?.organizationId
 
-  const batches =
-    useAdminBatches()
+  const inspections = useAdminInspections()
+  const batches = useAdminBatches()
+  const users = useAdminUsers()
+  const crud = useInspectionCrud()
 
-  const users =
-    useAdminUsers()
+  const [search, setSearch] = useState('')
+  const [editing, setEditing] = useState<AdminInspection | null>(null)
+  const [open, setOpen] = useState(false)
+  const [message, setMessage] = useState('')
+  const [actionError, setActionError] = useState('')
 
-  const crud =
-    useInspectionCrud()
+  const availableBatches = useMemo(() => {
+    let list = batches.data ?? []
+    if (isOrgAdmin && orgId) {
+      list = list.filter((b) => b.currentOrganizationId === orgId)
+    }
+    return list
+  }, [batches.data, isOrgAdmin, orgId])
 
-  const [
-    search,
-    setSearch,
-  ] = useState('')
-
-  const [
-    editing,
-    setEditing,
-  ] =
-    useState<AdminInspection | null>(
-      null,
+  const inspectors = useMemo(() => {
+    let list = (users.data ?? []).filter(
+      (user) => user.role?.trim().toUpperCase() === 'INSPECTOR',
     )
+    if (isOrgAdmin && orgId) {
+      list = list.filter((user) => user.organizationId === orgId)
+    }
+    return list
+  }, [users.data, isOrgAdmin, orgId])
 
-  const [
-    open,
-    setOpen,
-  ] = useState(false)
-
-  const [
-    message,
-    setMessage,
-  ] = useState('')
-
-  const [
-    actionError,
-    setActionError,
-  ] = useState('')
-
-  const data =
-    inspections.data ?? []
-
-  // Chỉ user có role INSPECTOR mới được tạo kiểm định.
-  const inspectors =
-    (users.data ?? []).filter(
-      user =>
-        user.role
-          ?.trim()
-          .toUpperCase() ===
-        'INSPECTOR',
-    )
+  const data = useMemo(() => {
+    let list = inspections.data ?? []
+    if (isOrgAdmin && orgId) {
+      list = list.filter((ins) => availableBatches.some((b) => b.id === ins.batchId) || inspectors.some((u) => u.id === ins.inspectorId))
+    }
+    return list
+  }, [inspections.data, isOrgAdmin, orgId, availableBatches, inspectors])
 
   const rows =
     useMemo(() => {
@@ -462,7 +452,6 @@ export function AdminInspectionsPage() {
     <>
       <PageHeader
         title="Quản lý kiểm định"
-        description="Kiểm định chỉ được tạo bởi người dùng có vai trò INSPECTOR."
         search={search}
         onSearchChange={
           setSearch
@@ -533,94 +522,45 @@ export function AdminInspectionsPage() {
                   '',
               }
             : {
-                batchId:
-                  batches
-                    .data?.[0]
-                    ?.id ?? '',
-
-                inspectorId:
-                  inspectors[0]
-                    ?.id ?? '',
-
-                result: 'PASS',
-
+                batchId: '',
+                inspectorId: '',
+                result: '',
                 notes: '',
               }
         }
+        error={actionError}
         fields={[
           {
             name: 'batchId',
             label: 'Lô hàng',
             type: 'select',
             required: true,
-
-            options: (
-              batches.data ??
-              []
-            ).map(
-              item => ({
-                value:
-                  item.id,
-
-                label:
-                  item.batchCode,
-              }),
-            ),
+            options: availableBatches.map(item => ({
+              value: item.id,
+              label: item.batchCode,
+            })),
           },
-
           {
-            name:
-              'inspectorId',
-
-            label:
-              'Kiểm định viên',
-
+            name: 'inspectorId',
+            label: 'Kiểm định viên',
             type: 'select',
-
             required: true,
-
-            // QUAN TRỌNG:
-            // chỉ hiện INSPECTOR
-            options:
-              inspectors.map(
-                item => ({
-                  value:
-                    item.id,
-
-                  label:
-                    item.fullName ??
-                    item.email,
-                }),
-              ),
+            options: inspectors.map(item => ({
+              value: item.id,
+              label: item.fullName ?? item.email,
+            })),
           },
-
           {
             name: 'result',
             label: 'Kết quả',
             type: 'select',
             required: true,
-
             options: [
-              {
-                value: 'PASS',
-                label: 'PASS',
-              },
-
-              {
-                value: 'FAIL',
-                label: 'FAIL',
-              },
-
-              {
-                value:
-                  'PENDING',
-
-                label:
-                  'PENDING',
-              },
+              { value: 'PASS', label: 'PASS (Đạt)' },
+              { value: 'FAIL', label: 'FAIL (Không đạt)' },
+              { value: 'PENDING', label: 'PENDING (Chờ)' },
             ],
           },
-
           {
             name: 'notes',
             label: 'Ghi chú',
@@ -628,12 +568,11 @@ export function AdminInspectionsPage() {
           },
         ]}
         onClose={() => {
+          setActionError('')
           setOpen(false)
           setEditing(null)
         }}
-        onSave={values =>
-          void save(values)
-        }
+        onSave={values => void save(values)}
       />
 
       <Snackbar

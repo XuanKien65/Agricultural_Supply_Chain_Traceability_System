@@ -1,10 +1,8 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
-  Alert,
   Box,
   Button,
-  Chip,
   MenuItem,
   Pagination,
   Paper,
@@ -12,13 +10,11 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
-import { AddRounded, InfoOutlined, Inventory2Rounded, QrCodeScannerRounded, SearchRounded } from '@mui/icons-material'
+import { AddRounded, InfoOutlined, Inventory2Rounded, SearchRounded } from '@mui/icons-material'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatusChip } from '@/components/ui/StatusChip'
 import { useAuthStore } from '@/features/auth/auth.store'
-import { QrScannerDialog } from '../components/QrScannerDialog'
 import { useFarmerBatches } from '../batches.queries'
-import { getRecentBatches } from '../recentBatches'
 
 const PAGE_SIZE = 50
 
@@ -143,72 +139,6 @@ function FarmerBatchesTable() {
   )
 }
 
-function OperatorQuickLookup() {
-  const navigate = useNavigate()
-  const user = useAuthStore((s) => s.user)
-  const [code, setCode] = useState('')
-  const [scannerOpen, setScannerOpen] = useState(false)
-  const recent = user ? getRecentBatches(user.id) : []
-
-  function openBatch(id: number | string) {
-    navigate(`/batches/${id}`)
-  }
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <PageHeader
-        title="Tra Cứu Lô Hàng"
-        description="Tài khoản OPERATOR/INSPECTOR chưa có API danh sách lô dùng chung — quét QR hoặc nhập mã lô để mở nhanh."
-      />
-
-      <Alert severity="info">
-        Backend hiện chỉ hỗ trợ danh sách lô tìm kiếm/lọc cho vai trò FARMER. Với vai trò của bạn, hãy quét QR trên
-        bao bì/nhãn lô hàng hoặc nhập ID lô để mở trực tiếp.
-      </Alert>
-
-      <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 3, display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-        <TextField
-          size="small"
-          label="ID lô hàng"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          sx={{ flex: 1, minWidth: 200 }}
-        />
-        <Button variant="contained" disabled={!code.trim()} onClick={() => openBatch(code.trim())}>
-          Mở lô hàng
-        </Button>
-        <Button variant="outlined" startIcon={<QrCodeScannerRounded />} onClick={() => setScannerOpen(true)}>
-          Quét QR
-        </Button>
-      </Paper>
-
-      <QrScannerDialog open={scannerOpen} onClose={() => setScannerOpen(false)} onScanned={openBatch} />
-
-      <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>
-          Đã xem gần đây
-        </Typography>
-        {recent.length === 0 ? (
-          <Typography color="text.secondary">Chưa có lô hàng nào được xem trong thiết bị này.</Typography>
-        ) : (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {recent.map((r) => (
-              <Chip
-                key={r.batchId}
-                label={`${r.batchCode} · ${r.productName}`}
-                onClick={() => openBatch(r.batchId)}
-                variant="outlined"
-                sx={{ fontWeight: 600 }}
-              />
-            ))}
-          </Box>
-        )}
-      </Paper>
-    </Box>
-  )
-}
-
 export function BatchesPage() {
-  const user = useAuthStore((s) => s.user)
-  return user?.role === 'FARMER' ? <FarmerBatchesTable /> : <OperatorQuickLookup />
+  return <FarmerBatchesTable />
 }

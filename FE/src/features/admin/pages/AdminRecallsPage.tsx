@@ -43,41 +43,39 @@ import {
 
 import { AdminRowActions } from '../components/AdminRowActions'
 
+import { useAuthStore } from '@/features/auth/auth.store'
+
 export function AdminRecallsPage() {
-  const recalls =
-    useAdminRecalls()
+  const currentUser = useAuthStore((s) => s.user)
+  const isOrgAdmin = currentUser?.role === 'ORGADMIN'
+  const orgId = currentUser?.organizationId
 
-  const batches =
-    useAdminBatches()
+  const recalls = useAdminRecalls()
+  const batches = useAdminBatches()
+  const users = useAdminUsers()
+  const crud = useRecallCrud()
 
-  const users =
-    useAdminUsers()
+  const [search, setSearch] = useState('')
+  const [editing, setEditing] = useState<AdminRecall | null>(null)
+  const [actionError, setActionError] = useState('')
+  const [open, setOpen] = useState(false)
+  const [message, setMessage] = useState('')
 
-  const crud =
-    useRecallCrud()
+  const availableBatches = useMemo(() => {
+    let list = batches.data ?? []
+    if (isOrgAdmin && orgId) {
+      list = list.filter((b) => b.currentOrganizationId === orgId)
+    }
+    return list
+  }, [batches.data, isOrgAdmin, orgId])
 
-  const [
-    search,
-    setSearch,
-  ] = useState('')
-
-  const [
-    editing,
-    setEditing,
-  ] =
-    useState<AdminRecall | null>(
-      null,
-    )
-
-  const [
-    open,
-    setOpen,
-  ] = useState(false)
-
-  const [
-    message,
-    setMessage,
-  ] = useState('')
+  const availableUsers = useMemo(() => {
+    let list = users.data ?? []
+    if (isOrgAdmin && orgId) {
+      list = list.filter((u) => u.organizationId === orgId)
+    }
+    return list
+  }, [users.data, isOrgAdmin, orgId])
 
   const data =
     recalls.data ?? []
@@ -142,52 +140,58 @@ export function AdminRecallsPage() {
   async function save(
     values: FormValues,
   ) {
-    const payload:
-      AdminRecallPayload =
-      {
-        batchId:
-          Number(
-            values.batchId,
-          ),
+    try {
+      setActionError('')
 
-        reason:
-          String(
-            values.reason || '',
-          ) || null,
+      const batchId = Number(values.batchId)
+      const reason = String(values.reason || '').trim()
+      const severity = String(values.severity || '').trim()
+      const createdBy = Number(values.createdBy)
 
-        severity:
-          String(
-            values.severity ||
-              '',
-          ) || null,
-
-        createdBy:
-          Number(
-            values.createdBy,
-          ),
+      if (!values.batchId || Number.isNaN(batchId) || batchId <= 0) {
+        setActionError('Vui lòng chọn Lô hàng cần thu hồi.')
+        return
       }
 
-    if (editing) {
-      await crud.update.mutateAsync({
-        id: editing.id,
-        payload,
-      })
+      if (!reason) {
+        setActionError('Vui lòng nhập Lý do thu hồi.')
+        return
+      }
 
-      setMessage(
-        'Đã cập nhật thu hồi.',
-      )
-    } else {
-      await crud.create.mutateAsync(
-        payload,
-      )
+      if (!severity) {
+        setActionError('Vui lòng chọn Mức độ thu hồi.')
+        return
+      }
 
-      setMessage(
-        'Đã tạo thu hồi.',
-      )
+      if (!values.createdBy || Number.isNaN(createdBy) || createdBy <= 0) {
+        setActionError('Vui lòng chọn Người tạo lệnh thu hồi.')
+        return
+      }
+
+      const payload: AdminRecallPayload = {
+        batchId,
+        reason,
+        severity,
+        createdBy,
+      }
+
+      if (editing) {
+        await crud.update.mutateAsync({
+          id: editing.id,
+          payload,
+        })
+        setMessage('Đã cập nhật thu hồi.')
+      } else {
+        await crud.create.mutateAsync(payload)
+        setMessage('Đã tạo lệnh thu hồi sản phẩm.')
+      }
+
+      setOpen(false)
+      setEditing(null)
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : 'Không thể tạo lệnh thu hồi.'
+      setActionError(errMsg)
     }
-
-    setOpen(false)
-    setEditing(null)
   }
 
   async function remove(
@@ -306,24 +310,20 @@ export function AdminRecallsPage() {
   return (
     <>
       <PageHeader
-        title="Cảnh báo thu hồi"
-        description="CRUD bảng Recalls."
+        title="Cảnh báo & Thu hồi sản phẩm"
         search={search}
-        onSearchChange={
-          setSearch
-        }
+        onSearchChange={setSearch}
         action={
           <Button
             variant="contained"
-            startIcon={
-              <AddRounded />
-            }
+            color="error"
+            startIcon={<AddRounded />}
             onClick={() => {
               setEditing(null)
               setOpen(true)
             }}
           >
-            Tạo thu hồi
+            Tạo lệnh thu hồi
           </Button>
         }
       />
@@ -365,50 +365,35 @@ export function AdminRecallsPage() {
                   editing.createdBy,
               }
             : {
-                batchId:
-                  batches
-                    .data?.[0]
-                    ?.id ?? '',
-
+                batchId: '',
                 reason: '',
-
-                severity:
-                  'HIGH',
-
-                createdBy:
-                  users
-                    .data?.[0]
-                    ?.id ?? '',
+                severity: '',
+                createdBy: '',
               }
         }
+        error={actionError}
         fields={[
           {
             name: 'batchId',
             label: 'Lô hàng',
             type: 'select',
             required: true,
-
-            options: (
-              batches.data ??
-              []
-            ).map(item => ({
+            options: availableBatches.map(item => ({
               value: item.id,
-              label:
-                item.batchCode,
+              label: item.batchCode,
             })),
           },
-
           {
             name: 'reason',
-            label: 'Lý do',
+            label: 'Lý do thu hồi',
             type: 'multiline',
+            required: true,
           },
-
           {
             name: 'severity',
             label: 'Mức độ',
             type: 'select',
-
+            required: true,
             options: [
               'LOW',
               'MEDIUM',
@@ -419,31 +404,23 @@ export function AdminRecallsPage() {
               label: value,
             })),
           },
-
           {
             name: 'createdBy',
             label: 'Người tạo',
             type: 'select',
             required: true,
-
-            options: (
-              users.data ?? []
-            ).map(item => ({
+            options: availableUsers.map(item => ({
               value: item.id,
-
-              label:
-                item.fullName ??
-                item.email,
+              label: item.fullName ?? item.email,
             })),
           },
         ]}
         onClose={() => {
+          setActionError('')
           setOpen(false)
           setEditing(null)
         }}
-        onSave={values =>
-          void save(values)
-        }
+        onSave={values => void save(values)}
       />
 
       <Snackbar

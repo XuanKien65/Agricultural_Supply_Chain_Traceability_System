@@ -77,7 +77,6 @@ export function AdminRolesPage() {
     <>
       <PageHeader
         title="Quản lý vai trò"
-        description="Database.md lưu Role trực tiếp trong Users, không có bảng Roles riêng."
       />
 
       <DataTable

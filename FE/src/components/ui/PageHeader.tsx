@@ -4,7 +4,7 @@ import { SearchRounded } from '@mui/icons-material'
 
 interface Props {
   title: string
-  description: string
+  description?: string
   search?: string
   onSearchChange?: (value: string) => void
   action?: ReactNode
@@ -26,9 +26,11 @@ export function PageHeader({ title, description, search, onSearchChange, action 
         <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: -0.5 }}>
           {title}
         </Typography>
-        <Typography sx={{ mt: 0.5, color: 'text.secondary', fontSize: 14 }}>
-          {description}
-        </Typography>
+        {description && (
+          <Typography sx={{ mt: 0.5, color: 'text.secondary', fontSize: 14 }}>
+            {description}
+          </Typography>
+        )}
       </Box>
 
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.2 }}>

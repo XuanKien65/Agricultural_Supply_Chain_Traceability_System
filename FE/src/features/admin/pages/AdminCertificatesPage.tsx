@@ -42,41 +42,31 @@ import {
 
 import { AdminRowActions } from '../components/AdminRowActions'
 
+import { useAuthStore } from '@/features/auth/auth.store'
+
 export function AdminCertificatesPage() {
-  const certificates =
-    useAdminCertificates()
+  const currentUser = useAuthStore((s) => s.user)
+  const isOrgAdmin = currentUser?.role === 'ORGADMIN'
+  const orgId = currentUser?.organizationId
 
-  const batches =
-    useAdminBatches()
+  const certificates = useAdminCertificates()
+  const batches = useAdminBatches()
+  const inspections = useAdminInspections()
+  const crud = useCertificateCrud()
 
-  const inspections =
-    useAdminInspections()
+  const [search, setSearch] = useState('')
+  const [editing, setEditing] = useState<AdminCertificate | null>(null)
+  const [actionError, setActionError] = useState('')
+  const [open, setOpen] = useState(false)
+  const [message, setMessage] = useState('')
 
-  const crud =
-    useCertificateCrud()
-
-  const [
-    search,
-    setSearch,
-  ] = useState('')
-
-  const [
-    editing,
-    setEditing,
-  ] =
-    useState<AdminCertificate | null>(
-      null,
-    )
-
-  const [
-    open,
-    setOpen,
-  ] = useState(false)
-
-  const [
-    message,
-    setMessage,
-  ] = useState('')
+  const availableBatches = useMemo(() => {
+    let list = batches.data ?? []
+    if (isOrgAdmin && orgId) {
+      list = list.filter((b) => b.currentOrganizationId === orgId)
+    }
+    return list
+  }, [batches.data, isOrgAdmin, orgId])
 
   const data =
     certificates.data ?? []
@@ -139,57 +129,55 @@ export function AdminCertificatesPage() {
   async function save(
     values: FormValues,
   ) {
-    const payload:
-      AdminCertificatePayload =
-      {
-        batchId:
-          Number(
-            values.batchId,
-          ),
+    try {
+      setActionError('')
 
-        inspectionId:
-          values.inspectionId ===
-            '' ||
-          values.inspectionId ===
-            null
-            ? null
-            : Number(
-                values.inspectionId,
-              ),
+      const batchId = Number(values.batchId)
+      const certificateType = String(values.certificateType || '').trim()
+      const fileUrl = String(values.fileUrl || '').trim()
+      const inspectionId = values.inspectionId === '' || values.inspectionId === null
+        ? null
+        : Number(values.inspectionId)
 
-        certificateType:
-          String(
-            values.certificateType ||
-              '',
-          ) || null,
-
-        fileUrl:
-          String(
-            values.fileUrl || '',
-          ) || null,
+      if (!values.batchId || Number.isNaN(batchId) || batchId <= 0) {
+        setActionError('Vui lòng chọn Lô hàng cấp chứng nhận.')
+        return
       }
 
-    if (editing) {
-      await crud.update.mutateAsync({
-        id: editing.id,
-        payload,
-      })
+      if (!certificateType) {
+        setActionError('Vui lòng nhập Loại chứng nhận (ví dụ: VietGAP, GlobalGAP...).')
+        return
+      }
 
-      setMessage(
-        'Đã cập nhật chứng nhận.',
-      )
-    } else {
-      await crud.create.mutateAsync(
-        payload,
-      )
+      if (!fileUrl) {
+        setActionError('Vui lòng nhập URL file tài liệu chứng nhận.')
+        return
+      }
 
-      setMessage(
-        'Đã thêm chứng nhận.',
-      )
+      const payload: AdminCertificatePayload = {
+        batchId,
+        inspectionId,
+        certificateType,
+        fileUrl,
+      }
+
+      if (editing) {
+        await crud.update.mutateAsync({
+          id: editing.id,
+          payload,
+        })
+        setMessage('Đã cập nhật chứng nhận.')
+      } else {
+        await crud.create.mutateAsync(payload)
+        setMessage('Đã thêm chứng nhận mới.')
+      }
+
+      setOpen(false)
+      setEditing(null)
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : 'Không thể lưu chứng nhận.'
+      setActionError(errMsg)
     }
-
-    setOpen(false)
-    setEditing(null)
   }
 
   async function remove(
@@ -309,7 +297,6 @@ export function AdminCertificatesPage() {
     <>
       <PageHeader
         title="Quản lý chứng nhận"
-        description="CRUD bảng Certificates."
         search={search}
         onSearchChange={
           setSearch
@@ -367,77 +354,50 @@ export function AdminCertificatesPage() {
                   '',
               }
             : {
-                batchId:
-                  batches
-                    .data?.[0]
-                    ?.id ?? '',
-
-                inspectionId:
-                  null,
-
-                certificateType:
-                  '',
-
+                batchId: '',
+                inspectionId: '',
+                certificateType: '',
                 fileUrl: '',
               }
         }
+        error={actionError}
         fields={[
           {
             name: 'batchId',
             label: 'Lô hàng',
             type: 'select',
             required: true,
-
-            options: (
-              batches.data ??
-              []
-            ).map(item => ({
+            options: availableBatches.map(item => ({
               value: item.id,
-              label:
-                item.batchCode,
+              label: item.batchCode,
             })),
           },
-
           {
-            name:
-              'inspectionId',
-            label: 'Kiểm định',
+            name: 'inspectionId',
+            label: 'Kiểm định liên quan',
             type: 'select',
-
-            options: (
-              inspections.data ??
-              []
-            ).map(item => ({
+            options: (inspections.data ?? []).map(item => ({
               value: item.id,
-
-              label: `KD-${
-                item.id
-              } - ${
-                item.batchCode ??
-                item.batchId
-              }`,
+              label: `KD-${item.id} - ${item.batchCode ?? item.batchId}`,
             })),
           },
-
           {
-            name:
-              'certificateType',
-            label:
-              'Loại chứng nhận',
+            name: 'certificateType',
+            label: 'Loại chứng nhận',
+            required: true,
           },
-
           {
             name: 'fileUrl',
-            label: 'URL file',
+            label: 'URL file chứng nhận',
+            required: true,
           },
         ]}
         onClose={() => {
+          setActionError('')
           setOpen(false)
           setEditing(null)
         }}
-        onSave={values =>
-          void save(values)
-        }
+        onSave={values => void save(values)}
       />
 
       <Snackbar

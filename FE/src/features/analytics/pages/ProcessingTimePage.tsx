@@ -34,7 +34,7 @@ export function ProcessingTimePage() {
               <XAxis dataKey="stage" angle={-20} textAnchor="end" interval={0} height={80} tick={{ fontSize: 12 }} />
               <YAxis label={{ value: 'Giờ', angle: -90, position: 'insideLeft' }} />
               <Tooltip
-                formatter={(value, _name, entry) => {
+                formatter={(value: any, _name: any, entry: any) => {
                   const sample = (entry?.payload as { sampleCount?: number } | undefined)?.sampleCount
                   return [`${Number(value).toFixed(1)} giờ (n=${sample ?? '—'})`, 'Thời gian trung bình']
                 }}

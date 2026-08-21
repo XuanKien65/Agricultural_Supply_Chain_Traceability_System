@@ -1,12 +1,14 @@
-﻿// ==========================================
+// ==========================================
 // CODE GỐC & CÁC IMPORT CHÍNH
 // ==========================================
-import { Suspense } from 'react'
-import { AppBar, Box, Button, Toolbar, Typography, Chip, Avatar } from '@mui/material'
-import { LogoutRounded, DashboardRounded, Inventory2Rounded, TimelineRounded, FactCheckRounded, WarningAmberRounded, CategoryRounded, HomeRounded, InsightsRounded } from '@mui/icons-material'
+import { Suspense, useState } from 'react'
+import { AppBar, Box, Button, Toolbar, Typography, Chip, Avatar, Tooltip, IconButton } from '@mui/material'
+import { LogoutRounded, DashboardRounded, Inventory2Rounded, TimelineRounded, FactCheckRounded, WarningAmberRounded, CategoryRounded, HomeRounded, InsightsRounded, KeyRounded, ApartmentRounded, PeopleAltRounded, AssessmentRounded } from '@mui/icons-material'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/features/auth/auth.store'
+import { ChangePasswordDialog } from '@/features/auth/components/ChangePasswordDialog'
+import { NotificationPopover } from '@/features/notifications/NotificationPopover'
 import { supportedLocales } from '@/lib/i18n'
 import { PageLoader } from '@/components/ui/PageLoader'
 
@@ -15,20 +17,44 @@ export function MainLayout() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
 
   /* ==========================================
    * NEW CODE - Danh sách navigation theo vai trò
    * ========================================== */
   const navItems = [
     { label: 'Trang chủ', to: '/', icon: <HomeRounded fontSize="small" /> },
-    { label: 'Bảng điều khiển', to: '/dashboard', icon: <DashboardRounded fontSize="small" /> },
-    { label: 'Lô hàng', to: '/batches', icon: <Inventory2Rounded fontSize="small" /> },
-    { label: 'Ghi nhận sự kiện', to: '/record-event', icon: <TimelineRounded fontSize="small" /> },
-    { label: 'Sản phẩm', to: '/products', icon: <CategoryRounded fontSize="small" /> },
-    { label: 'Kiểm định (QC)', to: '/quality', icon: <FactCheckRounded fontSize="small" /> },
-    { label: 'Thu hồi (Recall)', to: '/recalls', icon: <WarningAmberRounded fontSize="small" /> },
-    ...(user && ['ADMIN', 'ORGADMIN', 'INSPECTOR'].includes(user.role)
-      ? [{ label: 'Phân tích', to: '/analytics/overview', icon: <InsightsRounded fontSize="small" /> }]
+    {
+      label: 'Bảng điều khiển',
+      to: user?.role === 'FARMER' ? '/farmer' : user?.role === 'ADMIN' || user?.role === 'ORGADMIN' ? '/admin' : '/dashboard',
+      icon: <DashboardRounded fontSize="small" />,
+    },
+    ...(user && user.role === 'ORGADMIN'
+      ? [
+          { label: 'Tổ chức của tôi', to: '/admin/organization', icon: <ApartmentRounded fontSize="small" /> },
+          { label: 'Người dùng nội bộ', to: '/admin/users', icon: <PeopleAltRounded fontSize="small" /> },
+          { label: 'Sản phẩm', to: '/admin/products', icon: <CategoryRounded fontSize="small" /> },
+          { label: 'Lô hàng', to: '/batches', icon: <Inventory2Rounded fontSize="small" /> },
+          { label: 'Phân bổ lô hàng', to: '/analytics/batch-distribution', icon: <AssessmentRounded fontSize="small" /> },
+          { label: 'Thời gian xử lý', to: '/analytics/processing-time', icon: <InsightsRounded fontSize="small" /> },
+          { label: 'Kiểm định (QC)', to: '/quality', icon: <FactCheckRounded fontSize="small" /> },
+          { label: 'Thu hồi (Recall)', to: '/recalls', icon: <WarningAmberRounded fontSize="small" /> },
+        ]
+      : [
+          { label: 'Lô hàng', to: '/batches', icon: <Inventory2Rounded fontSize="small" /> },
+          { label: 'Ghi nhận sự kiện', to: '/record-event', icon: <TimelineRounded fontSize="small" /> },
+          { label: 'Sản phẩm', to: '/products', icon: <CategoryRounded fontSize="small" /> },
+          { label: 'Kiểm định (QC)', to: '/quality', icon: <FactCheckRounded fontSize="small" /> },
+          { label: 'Thu hồi (Recall)', to: '/recalls', icon: <WarningAmberRounded fontSize="small" /> },
+        ]),
+    ...(user && ['ADMIN', 'ORGADMIN', 'INSPECTOR', 'OPERATOR', 'FARMER'].includes(user.role)
+      ? [
+          {
+            label: 'Phân tích',
+            to: user.role === 'ADMIN' || user.role === 'ORGADMIN' ? '/analytics/overview' : '/analytics/traceback',
+            icon: <InsightsRounded fontSize="small" />,
+          },
+        ]
       : []),
   ]
   /* ==========================================
@@ -112,6 +138,16 @@ export function MainLayout() {
             </Box>
           )}
 
+          {user && <NotificationPopover />}
+
+          {user && (
+            <Tooltip title="Đổi mật khẩu">
+              <IconButton size="small" onClick={() => setChangePasswordOpen(true)}>
+                <KeyRounded fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+
           <Button
             startIcon={<LogoutRounded />}
             size="small"
@@ -127,6 +163,11 @@ export function MainLayout() {
           </Button>
         </Toolbar>
       </AppBar>
+
+      <ChangePasswordDialog
+        open={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+      />
 
       <Box component="main" sx={{ p: { xs: 2, md: 4 }, maxWidth: 1400, width: '100%', mx: 'auto', flex: 1 }}>
         <Suspense fallback={<PageLoader />}>

@@ -27,7 +27,7 @@ function unwrap<T>(
     data: ApiEnvelope<T>
   },
 ): T {
-  return response.data.result
+  return response.data.data ?? response.data.result
 }
 
 const get =
@@ -84,6 +84,14 @@ export const adminApi = {
     get<AdminOrganization[]>(
       '/admin/organizations',
     ),
+
+  getOrganizationById: async (id: number): Promise<AdminOrganization> => {
+    try {
+      return await get<AdminOrganization>(`/v1/organizations/${id}`)
+    } catch {
+      return await get<AdminOrganization>(`/admin/organizations/${id}`)
+    }
+  },
 
   createOrganization: (
     payload:
@@ -363,5 +371,14 @@ export const adminApi = {
   ) =>
     http.delete(
       `/admin/recalls/${id}`,
+    ),
+
+  resolveRecall: (
+    id: number,
+  ) =>
+    http.patch<
+      ApiEnvelope<AdminRecall>
+    >(
+      `/admin/recalls/${id}/resolve`,
     ),
 }

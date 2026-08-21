@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ClipboardCheck, PlusCircle, Search, CheckCircle2, XCircle, ArrowRight, Calendar } from 'lucide-react'
+import { ClipboardCheck, PlusCircle, Search, CheckCircle2, XCircle, AlertTriangle, ArrowRight, Calendar } from 'lucide-react'
+import { getStoredInspections } from '../inspectionsStorage'
 
 /**
  * QualityInspectionsPage - Danh sách kiểm định chất lượng
@@ -15,46 +16,13 @@ export function QualityInspectionsPage() {
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
 
-  // ==========================================
-  // CODE GỐC: Fetch danh sách kiểm định
-  // ==========================================
   const { data, isLoading } = useQuery({
     queryKey: ['inspections', searchTerm],
     queryFn: async () => {
+      const items = getStoredInspections()
       return {
-        items: [
-          {
-            id: 'I001',
-            batchId: 'B001',
-            inspectionDate: '2026-01-15 10:30',
-            inspector: 'Đội KCS Nông trại Đà Lạt',
-            result: 'Pass',
-            passedCount: 5,
-            totalCount: 5,
-            notes: 'Lô hàng dâu tây đạt 5/5 tiêu chí VietGAP xuất khẩu.',
-          },
-          {
-            id: 'I002',
-            batchId: 'B002',
-            inspectionDate: '2026-01-18 09:30',
-            inspector: 'Phòng Lab Nông nghiệp Xanh',
-            result: 'Pass',
-            passedCount: 5,
-            totalCount: 5,
-            notes: 'Hàm lượng nitrat và vi sinh đạt chuẩn Organic quốc tế.',
-          },
-          {
-            id: 'I003',
-            batchId: 'B005',
-            inspectionDate: '2026-01-19 14:00',
-            inspector: 'Trung tâm Giám định Chất lượng',
-            result: 'Fail',
-            passedCount: 3,
-            totalCount: 5,
-            notes: 'Phát hiện dư lượng thuốc BVTV vượt ngưỡng quy định 0.05mg/kg.',
-          },
-        ],
-        totalCount: 3,
+        items,
+        totalCount: items.length,
       }
     },
   })
@@ -171,6 +139,11 @@ export function QualityInspectionsPage() {
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                           <span>ĐẠT CHUẨN</span>
+                        </span>
+                      ) : inspection.result === 'Conditional' ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                          <span>ĐẠT CÓ ĐIỀU KIỆN</span>
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-red-100 text-red-800 border border-red-300">

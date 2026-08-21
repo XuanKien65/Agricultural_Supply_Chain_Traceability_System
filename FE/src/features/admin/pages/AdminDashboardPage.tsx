@@ -33,7 +33,16 @@ import type {
   AdminBatch,
 } from '../admin.types'
 
+import { useAuthStore } from '@/features/auth/auth.store'
+import { AdminOrganizationDetailPage } from './AdminOrganizationDetailPage'
+
 export function AdminDashboardPage() {
+  const user = useAuthStore((s) => s.user)
+
+  if (user?.role === 'ORGADMIN') {
+    return <AdminOrganizationDetailPage />
+  }
+
   const {
     data,
     isLoading,
@@ -106,7 +115,6 @@ export function AdminDashboardPage() {
     <>
       <PageHeader
         title="Tổng quan hệ thống"
-        description="Dữ liệu thật từ SQL Server theo cấu trúc BE/docs/Database.md."
       />
 
       <Box

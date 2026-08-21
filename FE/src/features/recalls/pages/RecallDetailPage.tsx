@@ -1,8 +1,10 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
+import { adminApi } from '@/features/admin/admin.api'
+import { Button } from '@/components/ui/button'
 
 /**
  * RecallDetailPage - Chi tiết yêu cầu thu hồi
@@ -10,13 +12,53 @@ import { AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
  */
 export function RecallDetailPage() {
   const { recallId } = useParams()
+  const queryClient = useQueryClient()
+
+  const resolveMutation = useMutation({
+    mutationFn: async () => {
+      const numericId = Number(recallId)
+      if (!Number.isNaN(numericId) && numericId > 0) {
+        return adminApi.resolveRecall(numericId)
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recall', recallId] })
+      queryClient.invalidateQueries({ queryKey: ['recalls'] })
+    },
+  })
 
   // NEW CODE - Fetch recall details with traceback results
   const { data: recall, isLoading } = useQuery({
     queryKey: ['recall', recallId],
     queryFn: async () => {
-      // const response = await recallService.getRecall(recallId)
-      // return response
+      let numericId = Number(recallId)
+      if (!Number.isNaN(numericId) && numericId > 0) {
+        try {
+          const list = await adminApi.getRecalls()
+          const found = list.find((r) => r.id === numericId)
+          if (found) {
+            return {
+              id: `REC-${found.id}`,
+              batchId: found.batchCode ?? `#${found.batchId}`,
+              product: 'Nông sản lô #' + found.batchId,
+              reason: found.reason,
+              severity: found.severity ? found.severity.charAt(0).toUpperCase() + found.severity.slice(1).toLowerCase() : 'High',
+              status: found.isResolved ? 'Resolved' : 'Active',
+              description: found.reason,
+              recoveryActions: 'Dừng lưu thông và hoàn tiền cho người tiêu dùng.',
+              initiatedDate: found.createdAt ?? new Date().toISOString(),
+              affectedBatches: [
+                { id: found.batchCode ?? `#${found.batchId}`, product: 'Dầu / Dầu dừa / Nông sản', source: 'Trang trại', status: 'Recalled' },
+              ],
+              actorsNotified: [
+                { id: 'U1', name: 'Đơn vị xử lý', role: 'Processing', notifiedAt: new Date().toISOString(), acknowledged: true },
+              ],
+            }
+          }
+        } catch {
+          /* fallback */
+        }
+      }
       return {
         id: recallId,
         batchId: 'B001',
@@ -27,31 +69,29 @@ export function RecallDetailPage() {
         description:
           'Lô hàng B001 phát hiện dương tính với vi khuẩn Salmonella thông qua kiểm định chất lượng định kỳ.',
         recoveryActions:
-          'Tất cả người tiêu dùng đã mua sản phẩm này vui lòng dừng sử dụng ngay lập tức và liên hệ với nhà bán lẻ để hoàn tiền. Không có báo cáo bệnh nặng liên quan tới sản phẩm này cho đến nay.',
+          'Tất cả người tiêu dùng đã mua sản phẩm này vui lòng dừng sử dụng ngay lập tức và liên hệ với nhà bán lẻ để hoàn tiền.',
         initiatedDate: new Date().toISOString(),
         affectedBatches: [
           { id: 'B001', product: 'Dâu tây tươi', source: 'Farm A', status: 'Recalled' },
           { id: 'B002', product: 'Dâu tây tươi', source: 'Farm A', status: 'Recalled' },
-          { id: 'B003', product: 'Dâu tây tươi', source: 'Farm A', status: 'Recalled' },
         ],
         actorsNotified: [
           { id: 'U1', name: 'Processing Unit A', role: 'Processing', notifiedAt: new Date().toISOString(), acknowledged: true },
           { id: 'U2', name: 'Distribution Center B', role: 'Distribution', notifiedAt: new Date().toISOString(), acknowledged: true },
-          { id: 'U3', name: 'Retail Store C', role: 'Retail', notifiedAt: new Date().toISOString(), acknowledged: false },
         ],
       }
     },
   })
 
-  if (isLoading) return <div>Đang tải...</div>
-  if (!recall) return <div>Không tìm thấy recall</div>
+  if (isLoading) return <div className="p-8 text-center text-slate-500">Đang tải...</div>
+  if (!recall) return <div className="p-8 text-center text-slate-500">Không tìm thấy recall</div>
 
   const acknowledgedCount = recall.actorsNotified.filter((u: any) => u.acknowledged).length
 
   return (
     <div className="space-y-6">
       {/* NEW CODE - Recall header with severity indicator */}
-      <div className="flex justify-between items-start">
+      <div className="flex justify-between items-start flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <AlertTriangle className="w-8 h-8 text-red-600" />
@@ -59,16 +99,28 @@ export function RecallDetailPage() {
           </h1>
           <p className="text-gray-500">{recall.product}</p>
         </div>
-        <div className="text-right">
-          <Badge
-            variant={recall.severity === 'High' ? 'destructive' : recall.severity === 'Medium' ? 'secondary' : 'outline'}
-            className="text-lg px-4 py-2 mb-2"
-          >
-            {recall.severity === 'High' ? 'Mức độ CAO' : recall.severity === 'Medium' ? 'Mức độ TRUNG BÌNH' : 'Mức độ THẤP'}
-          </Badge>
-          <Badge variant={recall.status === 'Active' ? 'destructive' : 'default'}>
-            {recall.status === 'Active' ? 'Đang hoạt động' : 'Đã hoàn thành'}
-          </Badge>
+        <div className="flex items-center gap-2">
+          {recall.status === 'Active' && (
+            <Button
+              onClick={() => resolveMutation.mutate()}
+              disabled={resolveMutation.isPending}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+            >
+              <CheckCircle2 className="w-4 h-4 mr-1.5" />
+              {resolveMutation.isPending ? 'Đang xử lý...' : 'Giải Quyết Thu Hồi'}
+            </Button>
+          )}
+          <div className="text-right">
+            <Badge
+              variant={recall.severity === 'High' ? 'destructive' : recall.severity === 'Medium' ? 'secondary' : 'outline'}
+              className="text-sm px-3 py-1 mb-1 block text-center"
+            >
+              {recall.severity === 'High' ? 'Mức độ CAO' : recall.severity === 'Medium' ? 'Mức độ TRUNG BÌNH' : 'Mức độ THẤP'}
+            </Badge>
+            <Badge variant={recall.status === 'Active' ? 'destructive' : 'default'}>
+              {recall.status === 'Active' ? 'Đang hoạt động' : 'Đã hoàn thành'}
+            </Badge>
+          </div>
         </div>
       </div>
 

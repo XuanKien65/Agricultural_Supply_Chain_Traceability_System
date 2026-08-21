@@ -43,8 +43,8 @@ import { AdminRowActions } from '../components/AdminRowActions'
 
 const empty = {
   name: '',
-  type: 'FARM',
-  status: 'ACTIVE',
+  type: '',
+  status: '',
 }
 
 export function AdminUnitsPage() {
@@ -69,6 +69,8 @@ export function AdminUnitsPage() {
     useState<AdminOrganization | null>(
       null,
     )
+
+  const [actionError, setActionError] = useState('')
 
   const [
     open,
@@ -120,46 +122,52 @@ export function AdminUnitsPage() {
   async function save(
     values: FormValues,
   ) {
-    const payload:
-      AdminOrganizationPayload =
-      {
-        name:
-          String(
-            values.name,
-          ),
+    try {
+      setActionError('')
 
-        type:
-          String(
-            values.type,
-          ),
+      const name = String(values.name || '').trim()
+      const type = String(values.type || '').trim()
+      const status = String(values.status || '').trim()
 
-        status:
-          String(
-            values.status,
-          ),
+      if (!name) {
+        setActionError('Vui lòng nhập Tên tổ chức.')
+        return
       }
 
-    if (editing) {
-      await crud.update.mutateAsync({
-        id: editing.id,
-        payload,
-      })
+      if (!type) {
+        setActionError('Vui lòng chọn Loại tổ chức.')
+        return
+      }
 
-      setMessage(
-        'Đã cập nhật tổ chức.',
-      )
-    } else {
-      await crud.create.mutateAsync(
-        payload,
-      )
+      if (!status) {
+        setActionError('Vui lòng chọn Trạng thái tổ chức.')
+        return
+      }
 
-      setMessage(
-        'Đã thêm tổ chức.',
-      )
+      const payload: AdminOrganizationPayload = {
+        name,
+        type,
+        status,
+      }
+
+      if (editing) {
+        await crud.update.mutateAsync({
+          id: editing.id,
+          payload,
+        })
+
+        setMessage('Đã cập nhật tổ chức.')
+      } else {
+        await crud.create.mutateAsync(payload)
+        setMessage('Đã thêm tổ chức mới.')
+      }
+
+      setOpen(false)
+      setEditing(null)
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Không thể lưu tổ chức.'
+      setActionError(errMsg)
     }
-
-    setOpen(false)
-    setEditing(null)
   }
 
   async function remove(
@@ -257,18 +265,13 @@ export function AdminUnitsPage() {
   return (
     <>
       <PageHeader
-        title="Quản lý tổ chức"
-        description="CRUD bảng Organizations."
+        title="Quản lý Tổ chức & Tác nhân Chuỗi cung ứng"
         search={search}
-        onSearchChange={
-          setSearch
-        }
+        onSearchChange={setSearch}
         action={
           <Button
             variant="contained"
-            startIcon={
-              <AddRounded />
-            }
+            startIcon={<AddRounded />}
             onClick={() => {
               setEditing(null)
               setOpen(true)
@@ -312,55 +315,43 @@ export function AdminUnitsPage() {
               }
             : empty
         }
+        error={actionError}
         fields={[
           {
             name: 'name',
-            label:
-              'Tên tổ chức',
+            label: 'Tên tổ chức',
             required: true,
           },
-
           {
             name: 'type',
-            label: 'Loại',
+            label: 'Loại tổ chức',
             type: 'select',
             required: true,
-
             options: [
-              'FARM',
-              'PROCESSOR',
-              'DISTRIBUTOR',
-              'RETAILER',
-            ].map(value => ({
-              value,
-              label: value,
-            })),
+              { value: 'FARM', label: 'FARM (Nông trại)' },
+              { value: 'PROCESSOR', label: 'PROCESSOR (Nhà chế biến)' },
+              { value: 'DISTRIBUTOR', label: 'DISTRIBUTOR (Nhà phân phối)' },
+              { value: 'RETAILER', label: 'RETAILER (Đơn vị bán lẻ)' },
+            ],
           },
-
           {
             name: 'status',
-            label:
-              'Trạng thái',
+            label: 'Trạng thái',
             type: 'select',
             required: true,
-
             options: [
-              'ACTIVE',
-              'INACTIVE',
-              'SUSPENDED',
-            ].map(value => ({
-              value,
-              label: value,
-            })),
+              { value: 'ACTIVE', label: 'ACTIVE (Hoạt động)' },
+              { value: 'INACTIVE', label: 'INACTIVE (Tạm ngưng)' },
+              { value: 'SUSPENDED', label: 'SUSPENDED (Đang khóa)' },
+            ],
           },
         ]}
         onClose={() => {
+          setActionError('')
           setOpen(false)
           setEditing(null)
         }}
-        onSave={values =>
-          void save(values)
-        }
+        onSave={values => void save(values)}
       />
 
       <Snackbar

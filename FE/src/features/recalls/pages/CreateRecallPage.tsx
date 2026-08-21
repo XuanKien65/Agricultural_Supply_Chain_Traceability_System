@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -6,14 +6,18 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AlertCircle } from 'lucide-react'
+import { adminApi } from '@/features/admin/admin.api'
+import { useAuthStore } from '@/features/auth/auth.store'
 
-/**
- * CreateRecallPage - Tạo yêu cầu thu hồi sản phẩm mới
- * Cho phép admin hoặc cơ sở sản xuất kích hoạt cảnh báo recall
- * Hệ thống sẽ tự động truy vết ngược và gửi thông báo tới tất cả các actor
- */
 export function CreateRecallPage() {
   const navigate = useNavigate()
+  const currentUser = useAuthStore((s) => s.user)
+
+  const { data: batches } = useQuery({
+    queryKey: ['adminBatches'],
+    queryFn: () => adminApi.getBatches(),
+  })
+
   const [formData, setFormData] = useState({
     batchId: '',
     product: '',
@@ -24,15 +28,19 @@ export function CreateRecallPage() {
     recoveryActions: '',
   })
 
-  // NEW CODE - Create recall mutation with traceback & notification
   const createRecallMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      // const response = await recallService.createRecall(data)
-      // Hệ thống sẽ tự động:
-      // 1. Truy vết ngược (traceback) để tìm tất cả lô hàng liên quan
-      // 2. Gửi notification tới tất cả actor đang nắm giữ/xử lý lô hàng đó
-      // return response
-      return { id: 'R001', ...data }
+      const numericBatchId = Number(data.batchId)
+      if (Number.isNaN(numericBatchId) || numericBatchId <= 0) {
+        throw new Error('Vui lòng chọn hoặc nhập mã số lô hàng hợp lệ.')
+      }
+
+      return adminApi.createRecall({
+        batchId: numericBatchId,
+        reason: `${data.reason || 'Cảnh báo thu hồi'} - ${data.description}`.trim(),
+        severity: data.severity ? data.severity.toUpperCase() : 'HIGH',
+        createdBy: currentUser?.id ?? 1,
+      })
     },
     onSuccess: () => {
       navigate('/recalls')
@@ -74,14 +82,32 @@ export function CreateRecallPage() {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="batchId">Mã Lô Hàng Chính *</Label>
-            <Input
-              id="batchId"
-              name="batchId"
-              value={formData.batchId}
-              onChange={handleChange}
-              required
-              placeholder="vd: B001"
-            />
+            {batches && batches.length > 0 ? (
+              <Select
+                value={formData.batchId}
+                onValueChange={(val) => setFormData((prev) => ({ ...prev, batchId: val }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn lô hàng..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {batches.map((b) => (
+                    <SelectItem key={b.id} value={String(b.id)}>
+                      {b.batchCode} (#{b.id})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                id="batchId"
+                name="batchId"
+                value={formData.batchId}
+                onChange={handleChange}
+                required
+                placeholder="vd: 1, 2, B001"
+              />
+            )}
           </div>
 
           <div className="space-y-2">
